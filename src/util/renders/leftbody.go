@@ -8,7 +8,7 @@ func RenderLeftBody(skin *image.NRGBA, opts RenderOptions) *image.NRGBA {
 	slimOffset := GetSlimOffset(opts.Slim)
 
 	var (
-		leftHead    *image.NRGBA = RemoveTransparency(Extract(skin, 24, 8, 8, 8))
+		leftHead    *image.NRGBA = RemoveTransparency(Extract(skin, 16, 8, 8, 8))
 		leftLeftArm *image.NRGBA = nil
 		leftLeftLeg *image.NRGBA = nil
 	)
