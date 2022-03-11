@@ -22,5 +22,12 @@ func UUIDHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	if len(uuid) < 1 {
+		ctx.SetStatusCode(404)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+
+		return
+	}
+
 	ctx.SetBodyString(uuid)
 }
