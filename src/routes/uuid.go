@@ -2,16 +2,16 @@ package routes
 
 import (
 	"log"
-	"main/src/util"
 	"net/http"
 
+	"github.com/mineatar-io/api-server/src/util"
 	"github.com/valyala/fasthttp"
 )
 
 func UUIDHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)

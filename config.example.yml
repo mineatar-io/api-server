@@ -1,3 +1,36 @@
 redis:
   uri: 127.0.0.1:6379
   database: 0
+routes:
+  face:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+  head:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+  full_body:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+  front_body:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+  back_body:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+  left_body:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+  right_body:
+    default_scale: 4
+    min_scale: 1
+    max_scale: 64
+cache:
+  uuid_cache_duration: 2678400 # 1 week
+  skin_cache_duration: 86400 # 1 day
+  render_cache_duration: 86400 # 1 day

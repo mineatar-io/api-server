@@ -3,11 +3,11 @@ package util
 import (
 	"fmt"
 	"log"
-	"main/src/redis"
 	"strings"
+	"time"
 )
 
-func GetUUID(r *redis.Redis, value string) (string, error) {
+func GetUUID(value string) (string, error) {
 	value = strings.ToLower(strings.ReplaceAll(value, "-", ""))
 
 	if len(value) == 32 {
@@ -38,7 +38,7 @@ func GetUUID(r *redis.Redis, value string) (string, error) {
 		return "", nil
 	}
 
-	if err = r.Set(fmt.Sprintf("uuid:%s", value), profile.ID, 0); err != nil {
+	if err = r.Set(fmt.Sprintf("uuid:%s", value), profile.ID, time.Duration(config.Cache.UUIDCacheDuration)*time.Second); err != nil {
 		return "", err
 	}
 

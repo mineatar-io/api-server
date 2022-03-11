@@ -3,22 +3,24 @@ package main
 import (
 	"fmt"
 	"log"
-	"main/src/redis"
-	"main/src/routes"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/buaazp/fasthttprouter"
 	"github.com/joho/godotenv"
+	"github.com/mineatar-io/api-server/src/conf"
+	"github.com/mineatar-io/api-server/src/redis"
+	"github.com/mineatar-io/api-server/src/routes"
+	"github.com/mineatar-io/api-server/src/util"
 	"github.com/valyala/fasthttp"
 )
 
 var (
-	host   string         = "127.0.0.1"
-	port   uint16         = 3000
-	config *Configuration = &Configuration{}
-	r      *redis.Redis   = &redis.Redis{}
+	host   string              = "127.0.0.1"
+	port   uint16              = 3000
+	config *conf.Configuration = &conf.Configuration{}
+	r      *redis.Redis        = &redis.Redis{}
 )
 
 func init() {
@@ -52,7 +54,8 @@ func init() {
 		port = uint16(parsedValue)
 	}
 
-	routes.InitRoutes(r)
+	routes.Init(r, config)
+	util.Init(r, config)
 }
 
 func main() {

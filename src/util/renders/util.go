@@ -3,10 +3,9 @@ package renders
 import (
 	"image"
 	"image/draw"
-	"main/src/util/renders/matrix"
 
+	"github.com/mineatar-io/api-server/src/util/renders/matrix"
 	drw "golang.org/x/image/draw"
-
 	"golang.org/x/image/math/f64"
 )
 

@@ -3,9 +3,9 @@ package routes
 import (
 	"fmt"
 	"log"
-	"main/src/util"
 	"net/http"
 
+	"github.com/mineatar-io/api-server/src/util"
 	"github.com/valyala/fasthttp"
 )
 
@@ -14,7 +14,7 @@ func SkinHandler(ctx *fasthttp.RequestCtx) {
 
 	download := ctx.QueryArgs().GetBool("download")
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -25,7 +25,7 @@ func SkinHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)

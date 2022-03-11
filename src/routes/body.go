@@ -3,12 +3,11 @@ package routes
 import (
 	"fmt"
 	"log"
-	"main/src/util"
-	"main/src/util/renders"
-	"math"
 	"net/http"
 	"time"
 
+	"github.com/mineatar-io/api-server/src/util"
+	"github.com/mineatar-io/api-server/src/util/renders"
 	"github.com/valyala/fasthttp"
 )
 
@@ -20,10 +19,10 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 	scale, err := ctx.QueryArgs().GetUint("scale")
 
 	if err != nil {
-		scale = 4
+		scale = config.Routes.FullBody.DefaultScale
 	}
 
-	scale = int(math.Max(math.Min(float64(scale), MaxScaleFullBody), MinScale))
+	scale = util.Clamp(scale, config.Routes.FullBody.MinScale, config.Routes.FullBody.MaxScale)
 
 	overlay := true
 
@@ -31,7 +30,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		overlay = ctx.QueryArgs().GetBool("overlay")
 	}
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -67,7 +66,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -99,7 +98,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Hour*24); err != nil {
+	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -125,10 +124,10 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 	scale, err := ctx.QueryArgs().GetUint("scale")
 
 	if err != nil {
-		scale = 4
+		scale = config.Routes.FrontBody.DefaultScale
 	}
 
-	scale = int(math.Max(math.Min(float64(scale), MaxScale), MinScale))
+	scale = util.Clamp(scale, config.Routes.FrontBody.MinScale, config.Routes.FrontBody.MaxScale)
 
 	overlay := true
 
@@ -136,7 +135,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		overlay = ctx.QueryArgs().GetBool("overlay")
 	}
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -172,7 +171,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -204,7 +203,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Hour*24); err != nil {
+	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -230,10 +229,10 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 	scale, err := ctx.QueryArgs().GetUint("scale")
 
 	if err != nil {
-		scale = 4
+		scale = config.Routes.BackBody.DefaultScale
 	}
 
-	scale = int(math.Max(math.Min(float64(scale), MaxScale), MinScale))
+	scale = util.Clamp(scale, config.Routes.BackBody.MinScale, config.Routes.BackBody.MaxScale)
 
 	overlay := true
 
@@ -241,7 +240,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		overlay = ctx.QueryArgs().GetBool("overlay")
 	}
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -277,7 +276,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -309,7 +308,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Hour*24); err != nil {
+	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -335,10 +334,10 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 	scale, err := ctx.QueryArgs().GetUint("scale")
 
 	if err != nil {
-		scale = 4
+		scale = config.Routes.LeftBody.DefaultScale
 	}
 
-	scale = int(math.Max(math.Min(float64(scale), MaxScale), MinScale))
+	scale = util.Clamp(scale, config.Routes.LeftBody.MinScale, config.Routes.LeftBody.MaxScale)
 
 	overlay := true
 
@@ -346,7 +345,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		overlay = ctx.QueryArgs().GetBool("overlay")
 	}
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -382,7 +381,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -414,7 +413,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Hour*24); err != nil {
+	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -440,10 +439,10 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 	scale, err := ctx.QueryArgs().GetUint("scale")
 
 	if err != nil {
-		scale = 4
+		scale = config.Routes.RightBody.DefaultScale
 	}
 
-	scale = int(math.Max(math.Min(float64(scale), MaxScale), MinScale))
+	scale = util.Clamp(scale, config.Routes.RightBody.MinScale, config.Routes.RightBody.MaxScale)
 
 	overlay := true
 
@@ -451,7 +450,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		overlay = ctx.QueryArgs().GetBool("overlay")
 	}
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -487,7 +486,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -519,7 +518,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Hour*24); err != nil {
+	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)

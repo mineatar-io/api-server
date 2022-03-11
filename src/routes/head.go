@@ -3,12 +3,11 @@ package routes
 import (
 	"fmt"
 	"log"
-	"main/src/util"
-	"main/src/util/renders"
-	"math"
 	"net/http"
 	"time"
 
+	"github.com/mineatar-io/api-server/src/util"
+	"github.com/mineatar-io/api-server/src/util/renders"
 	"github.com/valyala/fasthttp"
 )
 
@@ -20,10 +19,10 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 	scale, err := ctx.QueryArgs().GetUint("scale")
 
 	if err != nil {
-		scale = 4
+		scale = config.Routes.Head.DefaultScale
 	}
 
-	scale = int(math.Max(math.Min(float64(scale), MaxScale), MinScale))
+	scale = util.Clamp(scale, config.Routes.Head.MinScale, config.Routes.Head.MaxScale)
 
 	overlay := true
 
@@ -31,7 +30,7 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 		overlay = ctx.QueryArgs().GetBool("overlay")
 	}
 
-	uuid, err := util.GetUUID(r, user)
+	uuid, err := util.GetUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -67,7 +66,7 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	skin, slim, err := util.GetPlayerSkin(r, uuid)
+	skin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -99,7 +98,7 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Hour*24); err != nil {
+	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)

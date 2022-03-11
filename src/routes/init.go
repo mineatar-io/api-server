@@ -1,17 +1,16 @@
 package routes
 
-import "main/src/redis"
+import (
+	"github.com/mineatar-io/api-server/src/conf"
+	"github.com/mineatar-io/api-server/src/redis"
+)
 
 var (
-	r *redis.Redis
+	r      *redis.Redis
+	config *conf.Configuration
 )
 
-const (
-	MaxScale         float64 = 64.0
-	MaxScaleFullBody float64 = 32.0
-	MinScale         float64 = 1.0
-)
-
-func InitRoutes(red *redis.Redis) {
+func Init(red *redis.Redis, c *conf.Configuration) {
 	r = red
+	config = c
 }

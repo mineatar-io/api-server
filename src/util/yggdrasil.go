@@ -9,7 +9,6 @@ import (
 	"image/draw"
 	"io/ioutil"
 	"log"
-	"main/src/redis"
 	"net/http"
 	"time"
 )
@@ -102,7 +101,7 @@ func GetPlayerProfile(uuid string) (*Profile, error) {
 	return result, nil
 }
 
-func GetPlayerSkin(r *redis.Redis, uuid string) (*image.NRGBA, bool, error) {
+func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	if len(uuid) < 1 {
 		return GetDefaultSkin(false), false, nil
 	}
@@ -214,7 +213,7 @@ func GetPlayerSkin(r *redis.Redis, uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	if slim {
-		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", time.Hour*24); err != nil {
+		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", time.Duration(config.Cache.SkinCacheDuration)*time.Second); err != nil {
 			return nil, false, err
 		}
 	} else {
@@ -223,7 +222,7 @@ func GetPlayerSkin(r *redis.Redis, uuid string) (*image.NRGBA, bool, error) {
 		}
 	}
 
-	if err = r.Set(fmt.Sprintf("skin:%s", uuid), body, time.Hour*24); err != nil {
+	if err = r.Set(fmt.Sprintf("skin:%s", uuid), body, time.Duration(config.Cache.SkinCacheDuration)*time.Second); err != nil {
 		return nil, false, err
 	}
 
