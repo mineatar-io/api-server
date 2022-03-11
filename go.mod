@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/buaazp/fasthttprouter v0.1.1
 	github.com/go-redis/redis/v8 v8.11.4
+	github.com/joho/godotenv v1.4.0
 	github.com/valyala/fasthttp v1.34.0
 	golang.org/x/image v0.0.0-20220302094943-723b81ca9867
 	gopkg.in/yaml.v2 v2.4.0

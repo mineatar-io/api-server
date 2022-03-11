@@ -7,8 +7,6 @@ import (
 )
 
 type Configuration struct {
-	Host  string `yaml:"host"`
-	Port  uint16 `yaml:"port"`
 	Redis struct {
 		URI      string `yaml:"uri"`
 		Database int    `yaml:"database"`
