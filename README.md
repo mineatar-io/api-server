@@ -30,5 +30,6 @@ go get ...
 
 If you find any issues with this API service (not the website itself), please create a [new issue](https://github.com/mineatar-io/api-server/issues) with all necessary details.
 
-## Copyright
-&copy; 2022 Jacob Gunther
+## License
+
+[MIT License](https://github.com/mineatar-io/api-server/blob/master/LICENSE)
