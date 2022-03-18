@@ -4,33 +4,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/mineatar-io/api-server/src/util"
-	"github.com/mineatar-io/api-server/src/util/renders"
+	"github.com/mineatar-io/skin-render"
 	"github.com/valyala/fasthttp"
 )
 
 func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.FullBody)
 
-	scale, err := ctx.QueryArgs().GetUint("scale")
-
-	if err != nil {
-		scale = config.Routes.FullBody.DefaultScale
-	}
-
-	scale = util.Clamp(scale, config.Routes.FullBody.MinScale, config.Routes.FullBody.MaxScale)
-
-	overlay := true
-
-	if ctx.QueryArgs().Has("overlay") {
-		overlay = ctx.QueryArgs().GetBool("overlay")
-	}
-
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -41,32 +26,45 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("result:fullbody-%d-%t-%s", scale, overlay, uuid)
-
-	cache, ok, err := r.GetBytes(cacheKey)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 
 		return
 	}
 
-	if ok {
-		if download {
-			ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+	cacheKey := fmt.Sprintf("result:fullbody-%d-%t-%s", opts.Scale, opts.Overlay, uuid)
+
+	{
+		cache, ok, err := r.GetBytes(cacheKey)
+
+		if err != nil {
+			log.Println(err)
+
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+			return
 		}
 
-		ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
-		ctx.SetContentType("image/png")
-		ctx.SetBody(cache)
+		if ok {
+			if opts.Download {
+				ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+			}
 
-		return
+			if util.Debug {
+				log.Printf("Retrieved cache for full body render for '%s'\n", uuid)
+			}
+
+			ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
+			ctx.SetContentType("image/png")
+			ctx.SetBody(cache)
+
+			return
+		}
 	}
 
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -77,15 +75,15 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
-	}
-
-	render := renders.RenderBody(skin, renders.RenderOptions{
-		Overlay: overlay,
+	render := skin.RenderBody(rawSkin, skin.Options{
+		Overlay: opts.Overlay,
 		Slim:    slim,
-		Scale:   scale,
+		Scale:   opts.Scale,
 	})
+
+	if util.Debug {
+		log.Printf("Rendered full body image for '%s'\n", uuid)
+	}
 
 	data, err := util.EncodePNG(render)
 
@@ -98,7 +96,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
+	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -107,7 +105,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 
@@ -119,23 +117,9 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.FrontBody)
 
-	scale, err := ctx.QueryArgs().GetUint("scale")
-
-	if err != nil {
-		scale = config.Routes.FrontBody.DefaultScale
-	}
-
-	scale = util.Clamp(scale, config.Routes.FrontBody.MinScale, config.Routes.FrontBody.MaxScale)
-
-	overlay := true
-
-	if ctx.QueryArgs().Has("overlay") {
-		overlay = ctx.QueryArgs().GetBool("overlay")
-	}
-
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -146,32 +130,45 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("result:frontbody-%d-%t-%s", scale, overlay, uuid)
-
-	cache, ok, err := r.GetBytes(cacheKey)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 
 		return
 	}
 
-	if ok {
-		if download {
-			ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+	cacheKey := fmt.Sprintf("result:frontbody-%d-%t-%s", opts.Scale, opts.Overlay, uuid)
+
+	{
+		cache, ok, err := r.GetBytes(cacheKey)
+
+		if err != nil {
+			log.Println(err)
+
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+			return
 		}
 
-		ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
-		ctx.SetContentType("image/png")
-		ctx.SetBody(cache)
+		if ok {
+			if opts.Download {
+				ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+			}
 
-		return
+			if util.Debug {
+				log.Printf("Retrieved cache for front body render for '%s'\n", uuid)
+			}
+
+			ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
+			ctx.SetContentType("image/png")
+			ctx.SetBody(cache)
+
+			return
+		}
 	}
 
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -182,15 +179,15 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
-	}
-
-	render := renders.RenderFrontBody(skin, renders.RenderOptions{
-		Overlay: overlay,
+	render := skin.RenderFrontBody(rawSkin, skin.Options{
+		Overlay: opts.Overlay,
 		Slim:    slim,
-		Scale:   scale,
+		Scale:   opts.Scale,
 	})
+
+	if util.Debug {
+		log.Printf("Rendered front body image for '%s'\n", uuid)
+	}
 
 	data, err := util.EncodePNG(render)
 
@@ -203,7 +200,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
+	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -212,7 +209,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 
@@ -224,23 +221,9 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.BackBody)
 
-	scale, err := ctx.QueryArgs().GetUint("scale")
-
-	if err != nil {
-		scale = config.Routes.BackBody.DefaultScale
-	}
-
-	scale = util.Clamp(scale, config.Routes.BackBody.MinScale, config.Routes.BackBody.MaxScale)
-
-	overlay := true
-
-	if ctx.QueryArgs().Has("overlay") {
-		overlay = ctx.QueryArgs().GetBool("overlay")
-	}
-
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -251,32 +234,45 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("result:backbody-%d-%t-%s", scale, overlay, uuid)
-
-	cache, ok, err := r.GetBytes(cacheKey)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 
 		return
 	}
 
-	if ok {
-		if download {
-			ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+	cacheKey := fmt.Sprintf("result:backbody-%d-%t-%s", opts.Scale, opts.Overlay, uuid)
+
+	{
+		cache, ok, err := r.GetBytes(cacheKey)
+
+		if err != nil {
+			log.Println(err)
+
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+			return
 		}
 
-		ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
-		ctx.SetContentType("image/png")
-		ctx.SetBody(cache)
+		if ok {
+			if opts.Download {
+				ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+			}
 
-		return
+			if util.Debug {
+				log.Printf("Retrieved cache for back body render for '%s'\n", uuid)
+			}
+
+			ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
+			ctx.SetContentType("image/png")
+			ctx.SetBody(cache)
+
+			return
+		}
 	}
 
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -287,15 +283,15 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
-	}
-
-	render := renders.RenderBackBody(skin, renders.RenderOptions{
-		Overlay: overlay,
+	render := skin.RenderBackBody(rawSkin, skin.Options{
+		Overlay: opts.Overlay,
 		Slim:    slim,
-		Scale:   scale,
+		Scale:   opts.Scale,
 	})
+
+	if util.Debug {
+		log.Printf("Rendered back body image for '%s'\n", uuid)
+	}
 
 	data, err := util.EncodePNG(render)
 
@@ -308,7 +304,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
+	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -317,7 +313,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 
@@ -329,23 +325,9 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.LeftBody)
 
-	scale, err := ctx.QueryArgs().GetUint("scale")
-
-	if err != nil {
-		scale = config.Routes.LeftBody.DefaultScale
-	}
-
-	scale = util.Clamp(scale, config.Routes.LeftBody.MinScale, config.Routes.LeftBody.MaxScale)
-
-	overlay := true
-
-	if ctx.QueryArgs().Has("overlay") {
-		overlay = ctx.QueryArgs().GetBool("overlay")
-	}
-
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -356,32 +338,45 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("result:leftbody-%d-%t-%s", scale, overlay, uuid)
-
-	cache, ok, err := r.GetBytes(cacheKey)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 
 		return
 	}
 
-	if ok {
-		if download {
-			ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+	cacheKey := fmt.Sprintf("result:leftbody-%d-%t-%s", opts.Scale, opts.Overlay, uuid)
+
+	{
+		cache, ok, err := r.GetBytes(cacheKey)
+
+		if err != nil {
+			log.Println(err)
+
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+			return
 		}
 
-		ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
-		ctx.SetContentType("image/png")
-		ctx.SetBody(cache)
+		if ok {
+			if opts.Download {
+				ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+			}
 
-		return
+			if util.Debug {
+				log.Printf("Retrieved cache for left body render for '%s'\n", uuid)
+			}
+
+			ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
+			ctx.SetContentType("image/png")
+			ctx.SetBody(cache)
+
+			return
+		}
 	}
 
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -392,15 +387,15 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
-	}
-
-	render := renders.RenderLeftBody(skin, renders.RenderOptions{
-		Overlay: overlay,
+	render := skin.RenderLeftBody(rawSkin, skin.Options{
+		Overlay: opts.Overlay,
 		Slim:    slim,
-		Scale:   scale,
+		Scale:   opts.Scale,
 	})
+
+	if util.Debug {
+		log.Printf("Rendered left body image for '%s'\n", uuid)
+	}
 
 	data, err := util.EncodePNG(render)
 
@@ -413,7 +408,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
+	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -422,7 +417,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 
@@ -434,23 +429,9 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.RightBody)
 
-	scale, err := ctx.QueryArgs().GetUint("scale")
-
-	if err != nil {
-		scale = config.Routes.RightBody.DefaultScale
-	}
-
-	scale = util.Clamp(scale, config.Routes.RightBody.MinScale, config.Routes.RightBody.MaxScale)
-
-	overlay := true
-
-	if ctx.QueryArgs().Has("overlay") {
-		overlay = ctx.QueryArgs().GetBool("overlay")
-	}
-
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -461,32 +442,45 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("result:rightbody-%d-%t-%s", scale, overlay, uuid)
-
-	cache, ok, err := r.GetBytes(cacheKey)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 
 		return
 	}
 
-	if ok {
-		if download {
-			ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+	cacheKey := fmt.Sprintf("result:rightbody-%d-%t-%s", opts.Scale, opts.Overlay, uuid)
+
+	{
+		cache, ok, err := r.GetBytes(cacheKey)
+
+		if err != nil {
+			log.Println(err)
+
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+			return
 		}
 
-		ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
-		ctx.SetContentType("image/png")
-		ctx.SetBody(cache)
+		if ok {
+			if opts.Download {
+				ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+			}
 
-		return
+			if util.Debug {
+				log.Printf("Retrieved cache for right body render for '%s'\n", uuid)
+			}
+
+			ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
+			ctx.SetContentType("image/png")
+			ctx.SetBody(cache)
+
+			return
+		}
 	}
 
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -497,15 +491,15 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
-	}
-
-	render := renders.RenderRightBody(skin, renders.RenderOptions{
-		Overlay: overlay,
+	render := skin.RenderRightBody(rawSkin, skin.Options{
+		Overlay: opts.Overlay,
 		Slim:    slim,
-		Scale:   scale,
+		Scale:   opts.Scale,
 	})
+
+	if util.Debug {
+		log.Printf("Rendered right body image for '%s'\n", uuid)
+	}
 
 	data, err := util.EncodePNG(render)
 
@@ -518,7 +512,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
+	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -527,7 +521,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 

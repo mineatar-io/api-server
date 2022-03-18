@@ -58,6 +58,21 @@ func init() {
 	util.Init(r, config)
 }
 
+func middleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "*")
+		ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS")
+		ctx.Response.Header.Set("Access-Control-Expose-Headers", "X-Cache-Hit")
+
+		if util.Debug {
+			log.Printf("%s %s (%s) - %s\n", ctx.Method(), ctx.URI(), ctx.RemoteAddr(), ctx.UserAgent())
+		}
+
+		next(ctx)
+	}
+}
+
 func main() {
 	defer r.Close()
 
@@ -76,5 +91,5 @@ func main() {
 
 	log.Printf("Listening on %s:%d\n", host, port)
 
-	log.Fatal(fasthttp.ListenAndServe(fmt.Sprintf("%s:%d", host, port), router.Handler))
+	log.Fatal(fasthttp.ListenAndServe(fmt.Sprintf("%s:%d", host, port), middleware(router.Handler)))
 }

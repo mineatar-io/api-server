@@ -12,20 +12,9 @@ import (
 func SkinHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.RawSkin)
 
-	uuid, err := util.GetUUID(user)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
-
-		return
-	}
-
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -36,11 +25,14 @@ func SkinHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+
+		return
 	}
 
-	data, err := util.EncodePNG(skin)
+	rawSkin, _, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -51,7 +43,18 @@ func SkinHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	data, err := util.EncodePNG(rawSkin)
+
+	if err != nil {
+		log.Println(err)
+
+		ctx.SetStatusCode(http.StatusInternalServerError)
+		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+		return
+	}
+
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 

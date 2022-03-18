@@ -11,7 +11,7 @@ import (
 func UUIDHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -22,7 +22,7 @@ func UUIDHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if len(uuid) < 1 {
+	if !ok {
 		ctx.SetStatusCode(404)
 		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 

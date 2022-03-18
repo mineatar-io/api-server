@@ -2,9 +2,19 @@ package conf
 
 import (
 	"io/ioutil"
+	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
+
+type RouteConfig struct {
+	DefaultScale    int  `yaml:"default_scale"`
+	DefaultOverlay  bool `yaml:"default_overlay"`
+	DefaultFallback bool `yaml:"default_fallback"`
+	DefaultDownload bool `yaml:"default_download"`
+	MinScale        int  `yaml:"min_scale"`
+	MaxScale        int  `yaml:"max_scale"`
+}
 
 type Configuration struct {
 	Redis struct {
@@ -12,46 +22,19 @@ type Configuration struct {
 		Database int    `yaml:"database"`
 	} `yaml:"redis"`
 	Routes struct {
-		Face struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"face"`
-		Head struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"head"`
-		FullBody struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"full_body"`
-		FrontBody struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"front_body"`
-		BackBody struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"back_body"`
-		LeftBody struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"left_body"`
-		RightBody struct {
-			DefaultScale int `yaml:"default_scale"`
-			MinScale     int `yaml:"min_scale"`
-			MaxScale     int `yaml:"max_scale"`
-		} `yaml:"right_body"`
+		Face      RouteConfig `yaml:"face"`
+		Head      RouteConfig `yaml:"head"`
+		FullBody  RouteConfig `yaml:"full_body"`
+		FrontBody RouteConfig `yaml:"front_body"`
+		BackBody  RouteConfig `yaml:"back_body"`
+		LeftBody  RouteConfig `yaml:"left_body"`
+		RightBody RouteConfig `yaml:"right_body"`
+		RawSkin   RouteConfig `yaml:"raw_skin"`
 	} `yaml:"routes"`
 	Cache struct {
-		UUIDCacheDuration   int64 `yaml:"uuid_cache_duration"`
-		SkinCacheDuration   int64 `yaml:"skin_cache_duration"`
-		RenderCacheDuration int64 `yaml:"render_cache_duration"`
+		UUIDCacheDuration   time.Duration `yaml:"uuid_cache_duration"`
+		SkinCacheDuration   time.Duration `yaml:"skin_cache_duration"`
+		RenderCacheDuration time.Duration `yaml:"render_cache_duration"`
 	} `yaml:"cache"`
 }
 

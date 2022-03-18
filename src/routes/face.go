@@ -4,33 +4,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/mineatar-io/api-server/src/util"
-	"github.com/mineatar-io/api-server/src/util/renders"
+	"github.com/mineatar-io/skin-render"
 	"github.com/valyala/fasthttp"
 )
 
 func FaceHandler(ctx *fasthttp.RequestCtx) {
 	user := ctx.UserValue("user").(string)
 
-	download := ctx.QueryArgs().GetBool("download")
+	opts := util.ParseQueryParams(ctx, config.Routes.Face)
 
-	scale, err := ctx.QueryArgs().GetUint("scale")
-
-	if err != nil {
-		scale = config.Routes.Face.DefaultScale
-	}
-
-	scale = util.Clamp(scale, config.Routes.Face.MinScale, config.Routes.Face.MaxScale)
-
-	overlay := true
-
-	if ctx.QueryArgs().Has("overlay") {
-		overlay = ctx.QueryArgs().GetBool("overlay")
-	}
-
-	uuid, err := util.GetUUID(user)
+	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
 		log.Println(err)
@@ -41,32 +26,45 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("result:face-%d-%t-%s", scale, overlay, uuid)
-
-	cache, ok, err := r.GetBytes(cacheKey)
-
-	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+	if !ok && !opts.Fallback {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
 
 		return
 	}
 
-	if ok {
-		if download {
-			ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+	cacheKey := fmt.Sprintf("result:face-%d-%t-%s", opts.Scale, opts.Overlay, uuid)
+
+	{
+		cache, ok, err := r.GetBytes(cacheKey)
+
+		if err != nil {
+			log.Println(err)
+
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+
+			return
 		}
 
-		ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
-		ctx.SetContentType("image/png")
-		ctx.SetBody(cache)
+		if ok {
+			if opts.Download {
+				ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
+			}
 
-		return
+			if util.Debug {
+				log.Printf("Retrieved cache for face render for '%s'\n", uuid)
+			}
+
+			ctx.Response.Header.Set("X-Cache-Hit", "TRUE")
+			ctx.SetContentType("image/png")
+			ctx.SetBody(cache)
+
+			return
+		}
 	}
 
-	skin, slim, err := util.GetPlayerSkin(uuid)
+	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
 		log.Println(err)
@@ -77,15 +75,15 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if skin == nil {
-		skin = util.GetDefaultSkin(slim)
-	}
-
-	render := renders.RenderFace(skin, renders.RenderOptions{
-		Overlay: overlay,
+	render := skin.RenderFace(rawSkin, skin.Options{
+		Overlay: opts.Overlay,
 		Slim:    slim,
-		Scale:   scale,
+		Scale:   opts.Scale,
 	})
+
+	if util.Debug {
+		log.Printf("Rendered face image for '%s'\n", uuid)
+	}
 
 	data, err := util.EncodePNG(render)
 
@@ -98,7 +96,7 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if err = r.Set(cacheKey, data, time.Duration(config.Cache.RenderCacheDuration)*time.Second); err != nil {
+	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
 		log.Println(err)
 
 		ctx.SetStatusCode(http.StatusInternalServerError)
@@ -107,7 +105,7 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if download {
+	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
 

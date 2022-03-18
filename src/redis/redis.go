@@ -1,7 +1,10 @@
 package redis
 
 import (
+	"bytes"
 	"context"
+	"image"
+	"image/draw"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -70,6 +73,34 @@ func (r *Redis) GetBytes(key string) ([]byte, bool, error) {
 	data, err := result.Bytes()
 
 	return data, true, err
+}
+
+func (r *Redis) GetNRGBA(key string) (*image.NRGBA, bool, error) {
+	value, ok, err := r.GetBytes(key)
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	if !ok {
+		return nil, false, nil
+	}
+
+	img, format, err := image.Decode(bytes.NewReader(value))
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	if format != "NRGBA" {
+		outputImg := image.NewNRGBA(img.Bounds())
+
+		draw.Draw(outputImg, img.Bounds(), img, image.Pt(0, 0), draw.Src)
+
+		return outputImg, true, nil
+	}
+
+	return img.(*image.NRGBA), true, nil
 }
 
 func (r *Redis) Exists(key string) (bool, error) {
