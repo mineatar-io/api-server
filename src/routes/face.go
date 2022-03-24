@@ -13,6 +13,10 @@ import (
 )
 
 var (
+	requestFaceMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "face_request_count",
+		Help: "The amount of face requests",
+	})
 	renderFaceMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "face_render_count",
 		Help: "The amount of face renders",
@@ -20,6 +24,8 @@ var (
 )
 
 func FaceHandler(ctx *fasthttp.RequestCtx) {
+	requestFaceMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.Face)

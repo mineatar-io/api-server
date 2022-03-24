@@ -15,10 +15,22 @@ import (
 	"github.com/mineatar-io/api-server/src/conf"
 	"github.com/mineatar-io/skin-render"
 	"github.com/mineatar-io/yggdrasil"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
 )
 
-var Debug bool = os.Getenv("DEBUG") == "true"
+var (
+	Debug                     bool = os.Getenv("DEBUG") == "true"
+	yggdrasilUUIDLookupMetric      = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "yggdrasil_uuid_lookup_count",
+		Help: "The amount of Yggdrasil UUID lookup requests",
+	})
+	yggdrasilTextureLookupMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "yggdrasil_texture_lookup_count",
+		Help: "The amount of Yggdrasil texture lookup requests",
+	})
+)
 
 type QueryParams struct {
 	Scale    int
@@ -59,6 +71,8 @@ func LookupUUID(value string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
+
+	yggdrasilUUIDLookupMetric.Inc()
 
 	if profile == nil {
 		if Debug {
@@ -141,6 +155,8 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
+
+	yggdrasilTextureLookupMetric.Inc()
 
 	if textures == nil {
 		if Debug {

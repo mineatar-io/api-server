@@ -13,6 +13,10 @@ import (
 )
 
 var (
+	requestHeadMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "head_request_count",
+		Help: "The amount of head requests",
+	})
 	renderHeadMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "head_render_count",
 		Help: "The amount of head renders",
@@ -20,6 +24,8 @@ var (
 )
 
 func HeadHandler(ctx *fasthttp.RequestCtx) {
+	requestHeadMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.Head)

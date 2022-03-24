@@ -13,21 +13,41 @@ import (
 )
 
 var (
+	requestFullBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "full_body_request_count",
+		Help: "The amount of full body requests",
+	})
 	renderFullBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "full_body_render_count",
 		Help: "The amount of full body renders",
+	})
+	requestFrontBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "front_body_request_count",
+		Help: "The amount of front body requests",
 	})
 	renderFrontBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "front_body_render_count",
 		Help: "The amount of front body renders",
 	})
+	requestBackBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "back_body_request_count",
+		Help: "The amount of back body requests",
+	})
 	renderBackBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "back_body_render_count",
 		Help: "The amount of back body renders",
 	})
+	requestLeftBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "left_body_request_count",
+		Help: "The amount of left body requests",
+	})
 	renderLeftBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "left_body_render_count",
 		Help: "The amount of left body renders",
+	})
+	requestRightBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "right_body_request_count",
+		Help: "The amount of right body requests",
 	})
 	renderRightBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "right_body_render_count",
@@ -36,6 +56,8 @@ var (
 )
 
 func FullBodyHandler(ctx *fasthttp.RequestCtx) {
+	requestFullBodyMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.FullBody)
@@ -142,6 +164,8 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
+	requestFrontBodyMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.FrontBody)
@@ -248,6 +272,8 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func BackBodyHandler(ctx *fasthttp.RequestCtx) {
+	requestBackBodyMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.BackBody)
@@ -354,6 +380,8 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
+	requestLeftBodyMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.LeftBody)
@@ -460,6 +488,8 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func RightBodyHandler(ctx *fasthttp.RequestCtx) {
+	requestRightBodyMetric.Inc()
+
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.RightBody)
