@@ -7,7 +7,32 @@ import (
 
 	"github.com/mineatar-io/api-server/src/util"
 	"github.com/mineatar-io/skin-render"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
+)
+
+var (
+	renderFullBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "full_body_render_count",
+		Help: "The amount of full body renders",
+	})
+	renderFrontBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "front_body_render_count",
+		Help: "The amount of front body renders",
+	})
+	renderBackBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "back_body_render_count",
+		Help: "The amount of back body renders",
+	})
+	renderLeftBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "left_body_render_count",
+		Help: "The amount of left body renders",
+	})
+	renderRightBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "right_body_render_count",
+		Help: "The amount of right body renders",
+	})
 )
 
 func FullBodyHandler(ctx *fasthttp.RequestCtx) {
@@ -84,6 +109,8 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 	if util.Debug {
 		log.Printf("Rendered full body image for '%s'\n", uuid)
 	}
+
+	renderFullBodyMetric.Inc()
 
 	data, err := util.EncodePNG(render)
 
@@ -189,6 +216,8 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered front body image for '%s'\n", uuid)
 	}
 
+	renderFrontBodyMetric.Inc()
+
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
@@ -292,6 +321,8 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 	if util.Debug {
 		log.Printf("Rendered back body image for '%s'\n", uuid)
 	}
+
+	renderBackBodyMetric.Inc()
 
 	data, err := util.EncodePNG(render)
 
@@ -397,6 +428,8 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered left body image for '%s'\n", uuid)
 	}
 
+	renderLeftBodyMetric.Inc()
+
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
@@ -500,6 +533,8 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 	if util.Debug {
 		log.Printf("Rendered right body image for '%s'\n", uuid)
 	}
+
+	renderRightBodyMetric.Inc()
 
 	data, err := util.EncodePNG(render)
 

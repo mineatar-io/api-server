@@ -7,7 +7,16 @@ import (
 
 	"github.com/mineatar-io/api-server/src/util"
 	"github.com/mineatar-io/skin-render"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
+)
+
+var (
+	renderHeadMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "head_render_count",
+		Help: "The amount of head renders",
+	})
 )
 
 func HeadHandler(ctx *fasthttp.RequestCtx) {
@@ -84,6 +93,8 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 	if util.Debug {
 		log.Printf("Rendered head image for '%s'\n", uuid)
 	}
+
+	renderHeadMetric.Inc()
 
 	data, err := util.EncodePNG(render)
 

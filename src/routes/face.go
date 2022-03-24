@@ -7,7 +7,16 @@ import (
 
 	"github.com/mineatar-io/api-server/src/util"
 	"github.com/mineatar-io/skin-render"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
+)
+
+var (
+	renderFaceMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "face_render_count",
+		Help: "The amount of face renders",
+	})
 )
 
 func FaceHandler(ctx *fasthttp.RequestCtx) {
@@ -84,6 +93,8 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 	if util.Debug {
 		log.Printf("Rendered face image for '%s'\n", uuid)
 	}
+
+	renderFaceMetric.Inc()
 
 	data, err := util.EncodePNG(render)
 

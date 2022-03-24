@@ -6,7 +6,16 @@ import (
 	"net/http"
 
 	"github.com/mineatar-io/api-server/src/util"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
+)
+
+var (
+	requestRawSkinMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "raw_skin_request_count",
+		Help: "The amount of raw skin requests",
+	})
 )
 
 func SkinHandler(ctx *fasthttp.RequestCtx) {
@@ -57,6 +66,8 @@ func SkinHandler(ctx *fasthttp.RequestCtx) {
 	if opts.Download {
 		ctx.Response.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, user))
 	}
+
+	requestRawSkinMetric.Inc()
 
 	ctx.SetContentType("image/png")
 	ctx.SetBody(data)

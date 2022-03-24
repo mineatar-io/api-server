@@ -5,7 +5,16 @@ import (
 	"net/http"
 
 	"github.com/mineatar-io/api-server/src/util"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
+)
+
+var (
+	uuidLookupMetric = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "uuid_lookup_request_count",
+		Help: "The amount of UUID lookup requests",
+	})
 )
 
 func UUIDHandler(ctx *fasthttp.RequestCtx) {
@@ -21,6 +30,8 @@ func UUIDHandler(ctx *fasthttp.RequestCtx) {
 
 		return
 	}
+
+	uuidLookupMetric.Inc()
 
 	if !ok {
 		ctx.SetStatusCode(404)
