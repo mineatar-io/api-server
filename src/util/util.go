@@ -285,3 +285,17 @@ func ParseQueryParams(ctx *fasthttp.RequestCtx, route conf.RouteConfig) *QueryPa
 
 	return response
 }
+
+func WriteError(ctx *fasthttp.RequestCtx, err error, statusCode int, body ...string) {
+	ctx.SetStatusCode(statusCode)
+
+	if len(body) > 0 {
+		ctx.SetBodyString(body[0])
+	} else {
+		ctx.SetBodyString(http.StatusText(statusCode))
+	}
+
+	if err != nil {
+		log.Println(err)
+	}
+}

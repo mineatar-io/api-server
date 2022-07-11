@@ -7,25 +7,10 @@ import (
 
 	"github.com/mineatar-io/api-server/src/util"
 	"github.com/mineatar-io/skin-render"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
 )
 
-var (
-	requestFaceMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "face_request_count",
-		Help: "The amount of face requests",
-	})
-	renderFaceMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "face_render_count",
-		Help: "The amount of face renders",
-	})
-)
-
 func FaceHandler(ctx *fasthttp.RequestCtx) {
-	requestFaceMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.Face)
@@ -33,17 +18,13 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -54,10 +35,7 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -82,10 +60,7 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -100,24 +75,16 @@ func FaceHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered face image for '%s'\n", uuid)
 	}
 
-	renderFaceMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}

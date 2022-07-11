@@ -7,57 +7,10 @@ import (
 
 	"github.com/mineatar-io/api-server/src/util"
 	"github.com/mineatar-io/skin-render"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
 )
 
-var (
-	requestFullBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "full_body_request_count",
-		Help: "The amount of full body requests",
-	})
-	renderFullBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "full_body_render_count",
-		Help: "The amount of full body renders",
-	})
-	requestFrontBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "front_body_request_count",
-		Help: "The amount of front body requests",
-	})
-	renderFrontBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "front_body_render_count",
-		Help: "The amount of front body renders",
-	})
-	requestBackBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "back_body_request_count",
-		Help: "The amount of back body requests",
-	})
-	renderBackBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "back_body_render_count",
-		Help: "The amount of back body renders",
-	})
-	requestLeftBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "left_body_request_count",
-		Help: "The amount of left body requests",
-	})
-	renderLeftBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "left_body_render_count",
-		Help: "The amount of left body renders",
-	})
-	requestRightBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "right_body_request_count",
-		Help: "The amount of right body requests",
-	})
-	renderRightBodyMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "right_body_render_count",
-		Help: "The amount of right body renders",
-	})
-)
-
 func FullBodyHandler(ctx *fasthttp.RequestCtx) {
-	requestFullBodyMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.FullBody)
@@ -65,17 +18,13 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -86,10 +35,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -114,10 +60,7 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -132,24 +75,16 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered full body image for '%s'\n", uuid)
 	}
 
-	renderFullBodyMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -164,8 +99,6 @@ func FullBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
-	requestFrontBodyMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.FrontBody)
@@ -173,17 +106,13 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -194,10 +123,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -222,10 +148,7 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -240,24 +163,16 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered front body image for '%s'\n", uuid)
 	}
 
-	renderFrontBodyMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -272,8 +187,6 @@ func FrontBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func BackBodyHandler(ctx *fasthttp.RequestCtx) {
-	requestBackBodyMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.BackBody)
@@ -281,17 +194,13 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -302,10 +211,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -330,10 +236,7 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -348,24 +251,16 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered back body image for '%s'\n", uuid)
 	}
 
-	renderBackBodyMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -380,8 +275,6 @@ func BackBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
-	requestLeftBodyMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.LeftBody)
@@ -389,17 +282,13 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -410,10 +299,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -438,10 +324,7 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -456,24 +339,16 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered left body image for '%s'\n", uuid)
 	}
 
-	renderLeftBodyMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -488,8 +363,6 @@ func LeftBodyHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func RightBodyHandler(ctx *fasthttp.RequestCtx) {
-	requestRightBodyMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.RightBody)
@@ -497,17 +370,13 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -518,10 +387,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -546,10 +412,7 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -564,24 +427,16 @@ func RightBodyHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered right body image for '%s'\n", uuid)
 	}
 
-	renderRightBodyMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}

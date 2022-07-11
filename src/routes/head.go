@@ -7,25 +7,10 @@ import (
 
 	"github.com/mineatar-io/api-server/src/util"
 	"github.com/mineatar-io/skin-render"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/valyala/fasthttp"
 )
 
-var (
-	requestHeadMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "head_request_count",
-		Help: "The amount of head requests",
-	})
-	renderHeadMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "head_render_count",
-		Help: "The amount of head renders",
-	})
-)
-
 func HeadHandler(ctx *fasthttp.RequestCtx) {
-	requestHeadMetric.Inc()
-
 	user := ctx.UserValue("user").(string)
 
 	opts := util.ParseQueryParams(ctx, config.Routes.Head)
@@ -33,17 +18,13 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 	uuid, ok, err := util.LookupUUID(user)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if !ok && !opts.Fallback {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString(http.StatusText(http.StatusNotFound))
+		util.WriteError(ctx, nil, http.StatusNotFound)
 
 		return
 	}
@@ -54,10 +35,7 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 		cache, ok, err := r.GetBytes(cacheKey)
 
 		if err != nil {
-			log.Println(err)
-
-			ctx.SetStatusCode(http.StatusInternalServerError)
-			ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+			util.WriteError(ctx, err, http.StatusInternalServerError)
 
 			return
 		}
@@ -82,10 +60,7 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 	rawSkin, slim, err := util.GetPlayerSkin(uuid)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
@@ -100,24 +75,16 @@ func HeadHandler(ctx *fasthttp.RequestCtx) {
 		log.Printf("Rendered head image for '%s'\n", uuid)
 	}
 
-	renderHeadMetric.Inc()
-
 	data, err := util.EncodePNG(render)
 
 	if err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}
 
 	if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
-		log.Println(err)
-
-		ctx.SetStatusCode(http.StatusInternalServerError)
-		ctx.SetBodyString(http.StatusText(http.StatusInternalServerError))
+		util.WriteError(ctx, err, http.StatusInternalServerError)
 
 		return
 	}

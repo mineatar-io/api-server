@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -14,26 +13,14 @@ import (
 	"github.com/mineatar-io/api-server/src/redis"
 	"github.com/mineatar-io/api-server/src/routes"
 	"github.com/mineatar-io/api-server/src/util"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/valyala/fasthttp"
 )
 
 var (
-	host           string              = "127.0.0.1"
-	port           uint16              = 3000
-	prometheusHost string              = "127.0.0.1"
-	prometheusPort uint16              = 3001
-	config         *conf.Configuration = &conf.Configuration{}
-	r              *redis.Redis        = &redis.Redis{}
-)
-
-var (
-	requestCountMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "request_count",
-		Help: "The total number of requests received",
-	})
+	host   string              = "127.0.0.1"
+	port   uint16              = 3000
+	config *conf.Configuration = &conf.Configuration{}
+	r      *redis.Redis        = &redis.Redis{}
 )
 
 func init() {
@@ -55,11 +42,6 @@ func init() {
 
 	if value, ok := os.LookupEnv("HOST"); ok {
 		host = value
-		prometheusHost = value
-	}
-
-	if value, ok := os.LookupEnv("PROM_HOST"); ok {
-		prometheusHost = value
 	}
 
 	if value, ok := os.LookupEnv("PORT"); ok {
@@ -70,17 +52,6 @@ func init() {
 		}
 
 		port = uint16(parsedValue)
-		prometheusPort = uint16(parsedValue + 1)
-	}
-
-	if value, ok := os.LookupEnv("PROM_PORT"); ok {
-		parsedValue, err := strconv.ParseUint(value, 10, 16)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		prometheusPort = uint16(parsedValue)
 	}
 
 	routes.Init(r, config)
@@ -98,17 +69,8 @@ func middleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 			log.Printf("%s %s (%s) - %s\n", ctx.Method(), ctx.URI(), ctx.RemoteAddr(), ctx.UserAgent())
 		}
 
-		requestCountMetric.Inc()
-
 		next(ctx)
 	}
-}
-
-func metrics() {
-	log.Printf("Prometheus listening on %s:%d\n", prometheusHost, prometheusPort)
-
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(fmt.Sprintf("%s:%d", prometheusHost, prometheusPort), nil)
 }
 
 func main() {
@@ -128,8 +90,6 @@ func main() {
 	router.GET("/body/right/:user", routes.RightBodyHandler)
 
 	log.Printf("Listening on %s:%d\n", host, port)
-
-	go metrics()
 
 	log.Fatal(fasthttp.ListenAndServe(fmt.Sprintf("%s:%d", host, port), middleware(router.Handler)))
 }
