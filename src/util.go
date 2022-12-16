@@ -1,4 +1,4 @@
-package util
+package main
 
 import (
 	"bytes"
@@ -9,34 +9,20 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/mineatar-io/api-server/src/conf"
+	"github.com/gofiber/fiber/v2"
 	"github.com/mineatar-io/skin-render"
 	"github.com/mineatar-io/yggdrasil"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/valyala/fasthttp"
-)
-
-var (
-	Debug                     bool = os.Getenv("DEBUG") == "true"
-	yggdrasilUUIDLookupMetric      = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "yggdrasil_uuid_lookup_count",
-		Help: "The amount of Yggdrasil UUID lookup requests",
-	})
-	yggdrasilTextureLookupMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "yggdrasil_texture_lookup_count",
-		Help: "The amount of Yggdrasil texture lookup requests",
-	})
 )
 
 type QueryParams struct {
-	Scale    int
-	Download bool
-	Overlay  bool
-	Fallback bool
+	Scale    int  `query:"scale"`
+	Download bool `query:"download"`
+	Overlay  bool `query:"overlay"`
+	Fallback bool `query:"fallback"`
 }
 
 func FormatUUID(uuid string) string {
@@ -59,10 +45,6 @@ func LookupUUID(value string) (string, bool, error) {
 	}
 
 	if ok {
-		if Debug {
-			log.Printf("Retrieved UUID from cache for '%s' (%s)\n", value, cache)
-		}
-
 		return cache, true, nil
 	}
 
@@ -72,22 +54,12 @@ func LookupUUID(value string) (string, bool, error) {
 		return "", false, err
 	}
 
-	yggdrasilUUIDLookupMetric.Inc()
-
 	if profile == nil {
-		if Debug {
-			log.Printf("Fetched UUID from Mojang for '%s', did not exist\n", value)
-		}
-
 		return "", false, nil
 	}
 
 	if err = r.Set(cacheKey, profile.UUID, config.Cache.UUIDCacheDuration); err != nil {
 		return "", true, err
-	}
-
-	if Debug {
-		log.Printf("Fetched UUID from Mojang for '%s' (%s)\n", value, profile.UUID)
 	}
 
 	return profile.UUID, true, nil
@@ -98,10 +70,6 @@ func FetchImage(url string) (*image.NRGBA, error) {
 
 	if err != nil {
 		return nil, err
-	}
-
-	if Debug {
-		log.Printf("Fetched image from URL: %s\n", url)
 	}
 
 	defer resp.Body.Close()
@@ -143,10 +111,6 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 			return nil, false, err
 		}
 
-		if Debug {
-			log.Printf("Retrieved skin for '%s' (slim: %t) from cache\n", uuid, slim)
-		}
-
 		return cache, slim, nil
 	}
 
@@ -156,20 +120,10 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return nil, false, err
 	}
 
-	yggdrasilTextureLookupMetric.Inc()
-
 	if textures == nil {
-		if Debug {
-			log.Printf("Fetched textures for '%s' from Mojang, none exists, using default skin\n", uuid)
-		}
-
 		slim := skin.IsSlimFromUUID(uuid)
 
 		return skin.GetDefaultSkin(slim), slim, nil
-	}
-
-	if Debug {
-		log.Printf("Fetched textures for '%s' from Mojang\n", uuid)
 	}
 
 	value := ""
@@ -255,8 +209,8 @@ func EncodePNG(img image.Image) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func ParseQueryParams(ctx *fasthttp.RequestCtx, route conf.RouteConfig) *QueryParams {
-	args := ctx.QueryArgs()
+func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
+	args := ctx.Context().QueryArgs()
 
 	response := &QueryParams{
 		Scale:    route.DefaultScale,
@@ -286,16 +240,16 @@ func ParseQueryParams(ctx *fasthttp.RequestCtx, route conf.RouteConfig) *QueryPa
 	return response
 }
 
-func WriteError(ctx *fasthttp.RequestCtx, err error, statusCode int, body ...string) {
-	ctx.SetStatusCode(statusCode)
+func GetInstanceID() (uint16, error) {
+	if instanceID := os.Getenv("INSTANCE_ID"); len(instanceID) > 0 {
+		value, err := strconv.ParseUint(instanceID, 10, 16)
 
-	if len(body) > 0 {
-		ctx.SetBodyString(body[0])
-	} else {
-		ctx.SetBodyString(http.StatusText(statusCode))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return uint16(value), nil
 	}
 
-	if err != nil {
-		log.Println(err)
-	}
+	return 0, nil
 }

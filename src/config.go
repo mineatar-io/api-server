@@ -1,7 +1,7 @@
-package conf
+package main
 
 import (
-	"io/ioutil"
+	"os"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -17,6 +17,8 @@ type RouteConfig struct {
 }
 
 type Configuration struct {
+	Host  string `yaml:"host"`
+	Port  uint16 `yaml:"port"`
 	Redis struct {
 		URI      string `yaml:"uri"`
 		Database int    `yaml:"database"`
@@ -39,7 +41,7 @@ type Configuration struct {
 }
 
 func (c *Configuration) ReadFile(file string) error {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 
 	if err != nil {
 		return err

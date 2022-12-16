@@ -1,4 +1,4 @@
-package redis
+package main
 
 import (
 	"bytes"
@@ -8,27 +8,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-)
-
-var (
-	redisGetMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "redis_get_count",
-		Help: "The amount of Redis GET requests",
-	})
-	redisSetMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "redis_set_count",
-		Help: "The amount of Redis SET requests",
-	})
-	redisExistsMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "redis_exists_count",
-		Help: "The amount of Redis EXIST requests",
-	})
-	redisDeleteMetric = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "redis_delete_count",
-		Help: "The amount of Redis DELETE requests",
-	})
 )
 
 type Redis struct {
@@ -51,8 +30,6 @@ func (r *Redis) Connect(uri string, database int) error {
 }
 
 func (r *Redis) GetString(key string) (string, bool, error) {
-	redisGetMetric.Inc()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
@@ -73,8 +50,6 @@ func (r *Redis) GetString(key string) (string, bool, error) {
 }
 
 func (r *Redis) GetBytes(key string) ([]byte, bool, error) {
-	redisGetMetric.Inc()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
@@ -101,8 +76,6 @@ func (r *Redis) GetBytes(key string) ([]byte, bool, error) {
 }
 
 func (r *Redis) GetNRGBA(key string) (*image.NRGBA, bool, error) {
-	redisGetMetric.Inc()
-
 	value, ok, err := r.GetBytes(key)
 
 	if err != nil {
@@ -131,8 +104,6 @@ func (r *Redis) GetNRGBA(key string) (*image.NRGBA, bool, error) {
 }
 
 func (r *Redis) Exists(key string) (bool, error) {
-	redisExistsMetric.Inc()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
@@ -143,8 +114,6 @@ func (r *Redis) Exists(key string) (bool, error) {
 }
 
 func (r *Redis) Delete(key string) error {
-	redisDeleteMetric.Inc()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
@@ -153,8 +122,6 @@ func (r *Redis) Delete(key string) error {
 }
 
 func (r *Redis) Set(key string, value interface{}, ttl time.Duration) error {
-	redisSetMetric.Inc()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
