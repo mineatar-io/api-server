@@ -20,7 +20,10 @@ type Configuration struct {
 	Host  string `yaml:"host"`
 	Port  uint16 `yaml:"port"`
 	Redis struct {
-		URI      string `yaml:"uri"`
+		Host     string `yaml:"host"`
+		Port     uint16 `yaml:"port"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
 		Database int    `yaml:"database"`
 	} `yaml:"redis"`
 	Routes struct {
