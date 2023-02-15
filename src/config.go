@@ -16,16 +16,18 @@ type RouteConfig struct {
 	MaxScale        int  `yaml:"max_scale"`
 }
 
+type RedisConfig struct {
+	Host     string `yaml:"host"`
+	Port     uint16 `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Database int    `yaml:"database"`
+}
+
 type Configuration struct {
-	Host  string `yaml:"host"`
-	Port  uint16 `yaml:"port"`
-	Redis struct {
-		Host     string `yaml:"host"`
-		Port     uint16 `yaml:"port"`
-		User     string `yaml:"user"`
-		Password string `yaml:"password"`
-		Database int    `yaml:"database"`
-	} `yaml:"redis"`
+	Host   string      `yaml:"host"`
+	Port   uint16      `yaml:"port"`
+	Redis  RedisConfig `yaml:"redis"`
 	Routes struct {
 		Face      RouteConfig `yaml:"face"`
 		Head      RouteConfig `yaml:"head"`

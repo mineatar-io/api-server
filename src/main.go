@@ -33,7 +33,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if err = r.Connect(config.Redis.URI, config.Redis.Database); err != nil {
+	if err = r.Connect(config.Redis); err != nil {
 		log.Fatal(err)
 	}
 

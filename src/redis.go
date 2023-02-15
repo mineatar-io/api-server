@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image"
 	"image/draw"
 	"time"
@@ -14,10 +15,12 @@ type Redis struct {
 	conn *redis.Client
 }
 
-func (r *Redis) Connect(uri string, database int) error {
+func (r *Redis) Connect(conf RedisConfig) error {
 	c := redis.NewClient(&redis.Options{
-		Addr: uri,
-		DB:   database,
+		Addr:     fmt.Sprintf("%s:%d", conf.Host, conf.Port),
+		Username: conf.User,
+		Password: conf.Password,
+		DB:       conf.Database,
 	})
 
 	r.conn = c
