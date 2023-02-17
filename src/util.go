@@ -11,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mineatar-io/skin-render"
@@ -168,12 +167,12 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return nil, false, err
 	}
 
-	if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, time.Duration(config.Cache.SkinCacheDuration)*time.Second); err != nil {
+	if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, config.Cache.SkinCacheDuration); err != nil {
 		return nil, false, err
 	}
 
 	if slim {
-		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", time.Duration(config.Cache.SkinCacheDuration)*time.Second); err != nil {
+		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", config.Cache.SkinCacheDuration); err != nil {
 			return nil, false, err
 		}
 	} else {
