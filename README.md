@@ -13,14 +13,11 @@ git clone https://github.com/mineatar-io/api-server.git
 cd api-server
 
 # Copy the `config.example.yml` file a new file `config.yml`
-# You will need to edit the details of this file for proper functionality
+# You will need to edit the details of this file.
 cp config.example.yml config.yml
 
-# Install the Go dependencies
-go get ...
-
 # Build the source code into a single executable
-./scripts/build
+make
 
 # Run the executable
 ./bin/main
