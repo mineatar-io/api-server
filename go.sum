@@ -50,8 +50,6 @@ github.com/mattn/go-runewidth v0.0.14 h1:+xnbZSEeDbOIg5/mE6JF0w6n9duR1l3/WmbinWV
 github.com/mattn/go-runewidth v0.0.14/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
 github.com/mineatar-io/skin-render v1.0.1 h1:ukZCagxGuaZM+E16h7XY+xGI+xlnI5R0EfEW0y+BIxs=
 github.com/mineatar-io/skin-render v1.0.1/go.mod h1:DkRV/kQmFokYp6n6KDcbSRA3EnEJnUW39GgTwPnYygQ=
-github.com/mineatar-io/yggdrasil v1.0.1 h1:z9kBhmgSnbciS1Vf38Dy6MVbeUkNtKQsJARFXpb2eUQ=
-github.com/mineatar-io/yggdrasil v1.0.1/go.mod h1:3WBd9LCY8AUy5rhftfp5hWGSE3VWfAIaSZS5rHROpJo=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=

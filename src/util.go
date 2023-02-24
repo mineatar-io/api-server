@@ -14,7 +14,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mineatar-io/skin-render"
-	"github.com/mineatar-io/yggdrasil"
 )
 
 type QueryParams struct {
@@ -47,7 +46,7 @@ func LookupUUID(value string) (string, bool, error) {
 		return cache, true, nil
 	}
 
-	profile, err := yggdrasil.UsernameToUUID(value)
+	profile, err := UsernameToUUID(value)
 
 	if err != nil {
 		return "", false, err
@@ -113,7 +112,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return cache, slim, nil
 	}
 
-	textures, err := yggdrasil.GetProfileTextures(uuid)
+	textures, err := GetProfileTextures(uuid)
 
 	if err != nil {
 		return nil, false, err
@@ -141,7 +140,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return skin.GetDefaultSkin(slim), slim, nil
 	}
 
-	texturesResult, err := yggdrasil.GetDecodedTexturesValue(value)
+	texturesResult, err := GetDecodedTexturesValue(value)
 
 	if err != nil {
 		return nil, false, err

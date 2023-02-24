@@ -7,7 +7,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/joho/godotenv v1.4.0
 	github.com/mineatar-io/skin-render v1.0.1
-	github.com/mineatar-io/yggdrasil v1.0.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
