@@ -52,7 +52,7 @@ func (r *Redis) GetString(key string) (string, bool, error) {
 	return result.Val(), true, result.Err()
 }
 
-func (r *Redis) GetBytes(key string) ([]byte, bool, error) {
+func (r *Redis) GetBytes(key string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
@@ -60,32 +60,32 @@ func (r *Redis) GetBytes(key string) ([]byte, bool, error) {
 	existsResult := r.conn.Exists(ctx, key)
 
 	if err := existsResult.Err(); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if existsResult.Val() == 0 {
-		return nil, false, nil
+		return nil, nil
 	}
 
 	result := r.conn.Get(ctx, key)
 
 	if err := result.Err(); err != nil {
-		return nil, true, err
+		return nil, err
 	}
 
 	data, err := result.Bytes()
 
-	return data, true, err
+	return data, err
 }
 
 func (r *Redis) GetNRGBA(key string) (*image.NRGBA, bool, error) {
-	value, ok, err := r.GetBytes(key)
+	value, err := r.GetBytes(key)
 
 	if err != nil {
 		return nil, false, err
 	}
 
-	if !ok {
+	if value == nil {
 		return nil, false, nil
 	}
 

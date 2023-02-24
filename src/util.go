@@ -252,3 +252,7 @@ func GetInstanceID() (uint16, error) {
 
 	return 0, nil
 }
+
+func ParseUserParam(ctx *fiber.Ctx) string {
+	return strings.Split(ctx.Params("user"), ".")[0]
+}
