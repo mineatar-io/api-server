@@ -6,7 +6,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/fiber/v2 v2.44.0
 	github.com/joho/godotenv v1.5.1
-	github.com/mineatar-io/skin-render v1.0.1
+	github.com/mineatar-io/skin-render v1.0.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
