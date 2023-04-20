@@ -20,8 +20,8 @@ var (
 			return ctx.SendStatus(http.StatusInternalServerError)
 		},
 	})
-	r      *Redis         = &Redis{}
-	config *Configuration = &Configuration{}
+	r    *Redis  = &Redis{}
+	conf *Config = &Config{}
 )
 
 func init() {
@@ -29,11 +29,11 @@ func init() {
 
 	godotenv.Load()
 
-	if err = config.ReadFile("config.yml"); err != nil {
+	if err = conf.ReadFile("config.yml"); err != nil {
 		log.Fatal(err)
 	}
 
-	if err = r.Connect(config.Redis); err != nil {
+	if err = r.Connect(conf.Redis); err != nil {
 		log.Fatal(err)
 	}
 
@@ -56,6 +56,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("Listening on %s:%d\n", config.Host, config.Port+instanceID)
-	log.Fatal(app.Listen(fmt.Sprintf("%s:%d", config.Host, config.Port+instanceID)))
+	log.Printf("Listening on %s:%d\n", conf.Host, conf.Port+instanceID)
+	log.Fatal(app.Listen(fmt.Sprintf("%s:%d", conf.Host, conf.Port+instanceID)))
 }

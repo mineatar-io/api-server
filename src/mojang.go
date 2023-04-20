@@ -8,11 +8,13 @@ import (
 	"net/http"
 )
 
+// MinecraftProfile is Minecraft profile information returned from the Mojang API.
 type MinecraftProfile struct {
 	Username string `json:"name"`
 	UUID     string `json:"id"`
 }
 
+// MinecraftProfileTextures is texture information about a Minecraft profile returned from the Mojang API.
 type MinecraftProfileTextures struct {
 	UUID       string `json:"id"`
 	Username   string `json:"name"`
@@ -24,6 +26,7 @@ type MinecraftProfileTextures struct {
 	} `json:"properties"`
 }
 
+// MinecraftDecodedTextures is the decoded object of the Base64-encoded values property in a MinecraftProfileTextures texture value.
 type MinecraftDecodedTextures struct {
 	Timestamp         int64  `json:"timestamp"`
 	UUID              string `json:"uuid"`
@@ -42,6 +45,7 @@ type MinecraftDecodedTextures struct {
 	} `json:"textures"`
 }
 
+// UsernameToUUID converts a Minecraft username into a UUID using Mojang.
 func UsernameToUUID(username string) (*MinecraftProfile, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.mojang.com/users/profiles/minecraft/%s", username), nil)
 
@@ -62,7 +66,7 @@ func UsernameToUUID(username string) (*MinecraftProfile, error) {
 			return nil, nil
 		}
 
-		return nil, fmt.Errorf("yggdrasil: unexpected response: %s", resp.Status)
+		return nil, fmt.Errorf("mojang: unexpected response: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()
@@ -82,6 +86,7 @@ func UsernameToUUID(username string) (*MinecraftProfile, error) {
 	return response, nil
 }
 
+// GetProfileTextures returns the textures of a Minecraft player from Mojang.
 func GetProfileTextures(uuid string) (*MinecraftProfileTextures, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/profile/%s", uuid), nil)
 
@@ -97,12 +102,12 @@ func GetProfileTextures(uuid string) (*MinecraftProfileTextures, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
-		if resp.StatusCode == 204 {
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNoContent {
 			return nil, nil
 		}
 
-		return nil, fmt.Errorf("yggdrasil: unexpected response: %s", resp.Status)
+		return nil, fmt.Errorf("mojang: unexpected response: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()
@@ -122,6 +127,7 @@ func GetProfileTextures(uuid string) (*MinecraftProfileTextures, error) {
 	return response, nil
 }
 
+// GetDecodedTexturesValue decodes the values from a MinecraftProfileTextures texture value.
 func GetDecodedTexturesValue(value string) (*MinecraftDecodedTextures, error) {
 	rawResult, err := base64.StdEncoding.DecodeString(value)
 
@@ -129,11 +135,11 @@ func GetDecodedTexturesValue(value string) (*MinecraftDecodedTextures, error) {
 		return nil, err
 	}
 
-	result := &MinecraftDecodedTextures{}
+	result := MinecraftDecodedTextures{}
 
-	if err = json.Unmarshal(rawResult, result); err != nil {
+	if err = json.Unmarshal(rawResult, &result); err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }

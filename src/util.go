@@ -16,6 +16,7 @@ import (
 	"github.com/mineatar-io/skin-render"
 )
 
+// QueryParams is used by most all API routes as options for how the image should be rendered, or how errors should be handled.
 type QueryParams struct {
 	Scale    int  `query:"scale"`
 	Download bool `query:"download"`
@@ -23,10 +24,12 @@ type QueryParams struct {
 	Fallback bool `query:"fallback"`
 }
 
+// FormatUUID returns the UUID string without any dashes.
 func FormatUUID(uuid string) string {
 	return strings.ToLower(strings.ReplaceAll(uuid, "-", ""))
 }
 
+// LookupUUID returns the UUID of a player either by username or UUID, while attempting to use any cached values in the database.
 func LookupUUID(value string) (string, bool, error) {
 	value = FormatUUID(value)
 
@@ -56,13 +59,14 @@ func LookupUUID(value string) (string, bool, error) {
 		return "", false, nil
 	}
 
-	if err = r.Set(cacheKey, profile.UUID, config.Cache.UUIDCacheDuration); err != nil {
+	if err = r.Set(cacheKey, profile.UUID, conf.Cache.UUIDCacheDuration); err != nil {
 		return "", true, err
 	}
 
 	return profile.UUID, true, nil
 }
 
+// FetchImage fetches the image by the URL and returns it as a parsed image.
 func FetchImage(url string) (*image.NRGBA, error) {
 	resp, err := http.Get(url)
 
@@ -89,6 +93,7 @@ func FetchImage(url string) (*image.NRGBA, error) {
 	return img.(*image.NRGBA), nil
 }
 
+// GetPlayerSkin fetches the skin of the Minecraft player by the UUID.
 func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	uuid = FormatUUID(uuid)
 
@@ -166,12 +171,12 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return nil, false, err
 	}
 
-	if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, config.Cache.SkinCacheDuration); err != nil {
+	if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, conf.Cache.SkinCacheDuration); err != nil {
 		return nil, false, err
 	}
 
 	if slim {
-		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", config.Cache.SkinCacheDuration); err != nil {
+		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", conf.Cache.SkinCacheDuration); err != nil {
 			return nil, false, err
 		}
 	} else {
@@ -183,8 +188,8 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	return skin, slim, nil
 }
 
-// This is used instead of `math.Min/Max` because of the
-// unnecessary coercion from/to float64.
+// Clamp clamps the input value between the minimum and maximum values.
+// This method is preferred over `math.Min()` and `math.Max()` to prevent any type coercion between floats and integers.
 func Clamp(value, min, max int) int {
 	if value > max {
 		return max
@@ -197,6 +202,7 @@ func Clamp(value, min, max int) int {
 	return value
 }
 
+// EncodePNG encodes the image into PNG format and returns the data as a byte array.
 func EncodePNG(img image.Image) ([]byte, error) {
 	buf := &bytes.Buffer{}
 
@@ -207,6 +213,7 @@ func EncodePNG(img image.Image) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// ParseQueryParams parses the query parameters from the request and returns a QueryParams struct, using default values from the provided configuration.
 func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
 	args := ctx.Context().QueryArgs()
 
@@ -238,6 +245,7 @@ func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
 	return response
 }
 
+// GetInstanceID returns the INSTANCE_ID environment variable parsed as an unsigned 16-bit integer.
 func GetInstanceID() (uint16, error) {
 	if instanceID := os.Getenv("INSTANCE_ID"); len(instanceID) > 0 {
 		value, err := strconv.ParseUint(instanceID, 10, 16)
@@ -252,6 +260,7 @@ func GetInstanceID() (uint16, error) {
 	return 0, nil
 }
 
+// ParseUserParam returns the user name from the route param, allowing values such as "PassTheMayo.png" to be returned as "PassTheMayo".
 func ParseUserParam(ctx *fiber.Ctx) string {
 	return strings.Split(ctx.Params("user"), ".")[0]
 }

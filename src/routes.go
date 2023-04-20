@@ -23,12 +23,14 @@ func init() {
 	app.Use(NotFoundHandler)
 }
 
+// PingHandler is the API handler used for the `/ping` route.
 func PingHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusOK)
 }
 
+// FullBodyHandler is the API handler used for the `/body/full/:user` route.
 func FullBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.FullBody)
+	opts := ParseQueryParams(ctx, conf.Routes.FullBody)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -65,7 +67,7 @@ func FullBodyHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -77,8 +79,9 @@ func FullBodyHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// FrontBodyHandler is the API handler used for the `/body/front/:user` route.
 func FrontBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.FrontBody)
+	opts := ParseQueryParams(ctx, conf.Routes.FrontBody)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -117,7 +120,7 @@ func FrontBodyHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -129,8 +132,9 @@ func FrontBodyHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// BackBodyHandler is the API handler used for the `/body/back/:user` route.
 func BackBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.BackBody)
+	opts := ParseQueryParams(ctx, conf.Routes.BackBody)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -169,7 +173,7 @@ func BackBodyHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -181,8 +185,9 @@ func BackBodyHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// LeftBodyHandler is the API handler used for the `/body/left/:user` route.
 func LeftBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.LeftBody)
+	opts := ParseQueryParams(ctx, conf.Routes.LeftBody)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -221,7 +226,7 @@ func LeftBodyHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -233,8 +238,9 @@ func LeftBodyHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// RightBodyHandler is the API handler used for the `/body/right/:user` route.
 func RightBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.RightBody)
+	opts := ParseQueryParams(ctx, conf.Routes.RightBody)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -273,7 +279,7 @@ func RightBodyHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -285,8 +291,9 @@ func RightBodyHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// FaceHandler is the API handler used for the `/face/:user` route.
 func FaceHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.Face)
+	opts := ParseQueryParams(ctx, conf.Routes.Face)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -325,7 +332,7 @@ func FaceHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -337,8 +344,9 @@ func FaceHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// HeadHandler is the API handler used for the `/head/:user` route.
 func HeadHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.Head)
+	opts := ParseQueryParams(ctx, conf.Routes.Head)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -377,7 +385,7 @@ func HeadHandler(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		if err = r.Set(cacheKey, data, config.Cache.RenderCacheDuration); err != nil {
+		if err = r.Set(cacheKey, data, conf.Cache.RenderCacheDuration); err != nil {
 			return err
 		}
 	}
@@ -389,8 +397,9 @@ func HeadHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// SkinHandler is the API handler used for the `/skin/:user` route.
 func SkinHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, config.Routes.RawSkin)
+	opts := ParseQueryParams(ctx, conf.Routes.RawSkin)
 
 	uuid, ok, err := LookupUUID(ParseUserParam(ctx))
 
@@ -421,6 +430,7 @@ func SkinHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("png").Send(data)
 }
 
+// UUIDHandler is the API handler used for the `/uuid/:user` route.
 func UUIDHandler(ctx *fiber.Ctx) error {
 	uuid, ok, err := LookupUUID(ctx.Params("user"))
 
@@ -435,6 +445,7 @@ func UUIDHandler(ctx *fiber.Ctx) error {
 	return ctx.SendString(uuid)
 }
 
+// NotFoundHandler is the API handler used for any requests that do not match an existing route.
 func NotFoundHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusNotFound)
 }

@@ -11,10 +11,12 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// Redis is a utility client for reading and writing values to the Redis server.
 type Redis struct {
 	conn *redis.Client
 }
 
+// Connect connects to the Redis server using the configuration values provided.
 func (r *Redis) Connect(conf RedisConfig) error {
 	c := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", conf.Host, conf.Port),
@@ -32,6 +34,7 @@ func (r *Redis) Connect(conf RedisConfig) error {
 	return c.Ping(ctx).Err()
 }
 
+// GetString gets the value from Redis by the key and returns the value as a string.
 func (r *Redis) GetString(key string) (string, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
@@ -52,6 +55,7 @@ func (r *Redis) GetString(key string) (string, bool, error) {
 	return result.Val(), true, result.Err()
 }
 
+// GetBytes gets the value from Redis by the key and returns the value as a byte array.
 func (r *Redis) GetBytes(key string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
@@ -78,6 +82,7 @@ func (r *Redis) GetBytes(key string) ([]byte, error) {
 	return data, err
 }
 
+// GetNRGBA gets the value from Redis by the key and returns the value as Go image.NRGBA image type.
 func (r *Redis) GetNRGBA(key string) (*image.NRGBA, bool, error) {
 	value, err := r.GetBytes(key)
 
@@ -106,6 +111,7 @@ func (r *Redis) GetNRGBA(key string) (*image.NRGBA, bool, error) {
 	return img.(*image.NRGBA), true, nil
 }
 
+// Exists returns whether or not the key exists in the database.
 func (r *Redis) Exists(key string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
@@ -116,6 +122,7 @@ func (r *Redis) Exists(key string) (bool, error) {
 	return result.Val() == 1, result.Err()
 }
 
+// Delete deletes the key from the database if it exists.
 func (r *Redis) Delete(key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
@@ -124,6 +131,7 @@ func (r *Redis) Delete(key string) error {
 	return r.conn.Del(ctx, key).Err()
 }
 
+// Set puts the key-value into the database with an optional TTL value.
 func (r *Redis) Set(key string, value interface{}, ttl time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
@@ -132,6 +140,7 @@ func (r *Redis) Set(key string, value interface{}, ttl time.Duration) error {
 	return r.conn.Set(ctx, key, value, ttl).Err()
 }
 
+// Close closes the connection to the database.
 func (r *Redis) Close() error {
 	return r.conn.Close()
 }
