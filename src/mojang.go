@@ -8,12 +8,6 @@ import (
 	"net/http"
 )
 
-// MinecraftProfile is Minecraft profile information returned from the Mojang API.
-type MinecraftProfile struct {
-	Username string `json:"name"`
-	UUID     string `json:"id"`
-}
-
 // MinecraftProfileTextures is texture information about a Minecraft profile returned from the Mojang API.
 type MinecraftProfileTextures struct {
 	UUID       string `json:"id"`
@@ -43,47 +37,6 @@ type MinecraftDecodedTextures struct {
 			URL string `json:"url"`
 		} `json:"CAPE,omitempty"`
 	} `json:"textures"`
-}
-
-// UsernameToUUID converts a Minecraft username into a UUID using Mojang.
-func UsernameToUUID(username string) (*MinecraftProfile, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.mojang.com/users/profiles/minecraft/%s", username), nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("User-Agent", "mineatar.io Skin Render API")
-
-	resp, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusNotFound {
-			return nil, nil
-		}
-
-		return nil, fmt.Errorf("mojang: unexpected response: %s", resp.Status)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	response := &MinecraftProfile{}
-
-	if err = json.Unmarshal(body, response); err != nil {
-		return nil, err
-	}
-
-	return response, nil
 }
 
 // GetProfileTextures returns the textures of a Minecraft player from Mojang.
@@ -118,13 +71,13 @@ func GetProfileTextures(uuid string) (*MinecraftProfileTextures, error) {
 		return nil, err
 	}
 
-	response := &MinecraftProfileTextures{}
+	response := MinecraftProfileTextures{}
 
-	if err = json.Unmarshal(body, response); err != nil {
+	if err = json.Unmarshal(body, &response); err != nil {
 		return nil, err
 	}
 
-	return response, nil
+	return &response, nil
 }
 
 // GetDecodedTexturesValue decodes the values from a MinecraftProfileTextures texture value.

@@ -21,7 +21,6 @@ type QueryParams struct {
 	Scale    int  `query:"scale"`
 	Download bool `query:"download"`
 	Overlay  bool `query:"overlay"`
-	Fallback bool `query:"fallback"`
 }
 
 // FormatUUID returns the UUID string without any dashes.
@@ -29,41 +28,15 @@ func FormatUUID(uuid string) string {
 	return strings.ToLower(strings.ReplaceAll(uuid, "-", ""))
 }
 
-// LookupUUID returns the UUID of a player either by username or UUID, while attempting to use any cached values in the database.
-func LookupUUID(value string) (string, bool, error) {
+// ParseUUID parses the UUID given by the route parameters, and returns a boolean if the UUID is valid.
+func ParseUUID(value string) (string, bool) {
 	value = FormatUUID(value)
 
-	if len(value) == 32 {
-		return value, true, nil
+	if len(value) != 32 {
+		return "", false
 	}
 
-	cacheKey := fmt.Sprintf("uuid:%s", value)
-
-	cache, ok, err := r.GetString(cacheKey)
-
-	if err != nil {
-		return "", false, err
-	}
-
-	if ok {
-		return cache, true, nil
-	}
-
-	profile, err := UsernameToUUID(value)
-
-	if err != nil {
-		return "", false, err
-	}
-
-	if profile == nil {
-		return "", false, nil
-	}
-
-	if err = r.Set(cacheKey, profile.UUID, conf.Cache.UUIDCacheDuration); err != nil {
-		return "", true, err
-	}
-
-	return profile.UUID, true, nil
+	return value, true
 }
 
 // FetchImage fetches the image by the URL and returns it as a parsed image.
@@ -95,12 +68,6 @@ func FetchImage(url string) (*image.NRGBA, error) {
 
 // GetPlayerSkin fetches the skin of the Minecraft player by the UUID.
 func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
-	uuid = FormatUUID(uuid)
-
-	if len(uuid) < 1 {
-		return skin.GetDefaultSkin(false), false, nil
-	}
-
 	cache, ok, err := r.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
 
 	if err != nil {
@@ -221,7 +188,6 @@ func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
 		Scale:    route.DefaultScale,
 		Download: route.DefaultDownload,
 		Overlay:  route.DefaultOverlay,
-		Fallback: route.DefaultFallback,
 	}
 
 	if args.Has("scale") {
@@ -232,10 +198,6 @@ func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
 
 	if args.Has("overlay") {
 		response.Overlay = args.GetBool("overlay")
-	}
-
-	if args.Has("fallback") {
-		response.Fallback = args.GetBool("fallback")
 	}
 
 	if args.Has("download") {
@@ -260,7 +222,12 @@ func GetInstanceID() (uint16, error) {
 	return 0, nil
 }
 
-// ParseUserParam returns the user name from the route param, allowing values such as "PassTheMayo.png" to be returned as "PassTheMayo".
-func ParseUserParam(ctx *fiber.Ctx) string {
-	return strings.Split(ctx.Params("user"), ".")[0]
+// ExtractUUID returns the user name from the route param, allowing values such as "PassTheMayo.png" to be returned as "PassTheMayo".
+func ExtractUUID(ctx *fiber.Ctx) string {
+	return strings.Split(ctx.Params("uuid"), ".")[0]
+}
+
+// SendUsernameDeprecation sends a deprecation warning about usernames.
+func SendUsernameDeprecation(ctx *fiber.Ctx) error {
+	return ctx.Status(http.StatusBadRequest).SendString("Deprecated: Username support has been deprecated since May 1st 2023, please use a valid UUID instead.")
 }
