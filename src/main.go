@@ -7,8 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -27,8 +27,6 @@ var (
 func init() {
 	var err error
 
-	godotenv.Load()
-
 	if err = conf.ReadFile("config.yml"); err != nil {
 		log.Fatal(err)
 	}
@@ -40,11 +38,19 @@ func init() {
 	log.Println("Successfully connected to Redis")
 
 	app.Use(recover.New())
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:  "*",
-		AllowMethods:  "HEAD,OPTIONS,GET",
-		ExposeHeaders: "Content-Type,Content-Disposition,X-Cache-Hit",
-	}))
+
+	if conf.Environment == "development" {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:  "*",
+			AllowMethods:  "HEAD,OPTIONS,GET",
+			ExposeHeaders: "X-Cache-Hit,X-Cache-Time-Remaining",
+		}))
+
+		app.Use(logger.New(logger.Config{
+			Format:     "${time} ${ip}:${port} -> ${status}: ${method} ${path} (${latency})\n",
+			TimeFormat: "2006/01/02 15:04:05",
+		}))
+	}
 }
 
 func main() {

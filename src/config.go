@@ -10,8 +10,9 @@ import (
 var (
 	// DefaultConfig is the default configuration values used by the application.
 	DefaultConfig *Config = &Config{
-		Host: "127.0.0.1",
-		Port: 3001,
+		Environment: "development",
+		Host:        "127.0.0.1",
+		Port:        3001,
 		Redis: RedisConfig{
 			Host:     "127.0.0.1",
 			Port:     6379,
@@ -91,11 +92,12 @@ var (
 
 // Config is the root configuration object for the application.
 type Config struct {
-	Host   string       `yaml:"host"`
-	Port   uint16       `yaml:"port"`
-	Redis  RedisConfig  `yaml:"redis"`
-	Routes RoutesConfig `yaml:"routes"`
-	Cache  CacheConfig  `yaml:"cache"`
+	Environment string       `yaml:"environment"`
+	Host        string       `yaml:"host"`
+	Port        uint16       `yaml:"port"`
+	Redis       RedisConfig  `yaml:"redis"`
+	Routes      RoutesConfig `yaml:"routes"`
+	Cache       CacheConfig  `yaml:"cache"`
 }
 
 // RoutesConfig is the configuration data of all API routes.
