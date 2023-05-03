@@ -35,12 +35,12 @@ func (r *Redis) Connect(conf RedisConfig) error {
 }
 
 // Scan returns all keys by the pattern in the Redis database.
-func (r *Redis) Scan(cursor uint64, pattern string) ([]string, uint64, error) {
+func (r *Redis) Scan(cursor uint64, pattern string, count int64) ([]string, uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancel()
 
-	res := r.conn.Scan(ctx, cursor, pattern, 25)
+	res := r.conn.Scan(ctx, cursor, pattern, count)
 
 	if err := res.Err(); err != nil {
 		return nil, 0, err

@@ -44,7 +44,7 @@ func ListHandler(ctx *fiber.Ctx) error {
 	result := make([]string, 0)
 
 	for {
-		keys, cursor, err := r.Scan(0, "unique:*")
+		keys, cursor, err := r.Scan(0, "unique:*", 25)
 
 		if err != nil {
 			return err
@@ -54,7 +54,7 @@ func ListHandler(ctx *fiber.Ctx) error {
 			result = append(result, strings.TrimPrefix(uuid, "unique:"))
 		}
 
-		if cursor == 0 || len(keys) < 1 {
+		if cursor == 0 {
 			break
 		}
 	}
