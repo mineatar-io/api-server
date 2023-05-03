@@ -96,6 +96,10 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return skin.GetDefaultSkin(slim), slim, nil
 	}
 
+	if err = r.Set(fmt.Sprintf("unique:%s", textures.UUID), "0", 0); err != nil {
+		return nil, false, err
+	}
+
 	value := ""
 
 	for _, property := range textures.Properties {

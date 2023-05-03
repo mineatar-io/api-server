@@ -30,6 +30,10 @@ github.com/mattn/go-runewidth v0.0.14 h1:+xnbZSEeDbOIg5/mE6JF0w6n9duR1l3/WmbinWV
 github.com/mattn/go-runewidth v0.0.14/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
 github.com/mineatar-io/skin-render v1.0.6 h1:tvuS/L1w4Awx4qxZDbrnvmHG8C4UGUFPaw9IDD/r1jg=
 github.com/mineatar-io/skin-render v1.0.6/go.mod h1:KkgHwrhTIqD73dkmeQwh5k2aHuWS8cDahVmd64gM128=
+github.com/mineatar-io/skin-render v1.0.7 h1:mJ7KIcekZFFKFffjF6swYTchTl2tjD86/4OJdprdTso=
+github.com/mineatar-io/skin-render v1.0.7/go.mod h1:KkgHwrhTIqD73dkmeQwh5k2aHuWS8cDahVmd64gM128=
+github.com/mineatar-io/skin-render v1.0.8 h1:5HJGqYJ2t2UxQtfN00v1+VWelG32d0TQZip7Htz4cR4=
+github.com/mineatar-io/skin-render v1.0.8/go.mod h1:KkgHwrhTIqD73dkmeQwh5k2aHuWS8cDahVmd64gM128=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/onsi/ginkgo v1.16.5 h1:8xi0RTUf59SOSfEtZMvwTvXYMzG4gV23XVHOZiXNtnE=
 github.com/onsi/gomega v1.18.1 h1:M1GfJqGRrBrrGGsbxzV5dqM2U2ApXefZCQpkukxYRLE=

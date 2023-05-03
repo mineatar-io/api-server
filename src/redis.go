@@ -34,6 +34,23 @@ func (r *Redis) Connect(conf RedisConfig) error {
 	return c.Ping(ctx).Err()
 }
 
+// Scan returns all keys by the pattern in the Redis database.
+func (r *Redis) Scan(cursor uint64, pattern string) ([]string, uint64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+
+	defer cancel()
+
+	res := r.conn.Scan(ctx, cursor, pattern, 25)
+
+	if err := res.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	keys, newCursor := res.Val()
+
+	return keys, newCursor, nil
+}
+
 // GetString gets the value from Redis by the key and returns the value as a string.
 func (r *Redis) GetString(key string) (string, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

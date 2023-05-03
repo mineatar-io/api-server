@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mineatar-io/skin-render"
@@ -11,6 +12,7 @@ import (
 
 func init() {
 	app.Get("/ping", PingHandler)
+	app.Get("/list", ListHandler)
 	app.Get("/skin/:uuid", SkinHandler)
 	app.Get("/face/:uuid", FaceHandler)
 	app.Get("/head/:uuid", HeadHandler)
@@ -25,6 +27,39 @@ func init() {
 // PingHandler is the API handler used for the `/ping` route.
 func PingHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusOK)
+}
+
+// ListHandler is the API handler used for the `/list` route.
+func ListHandler(ctx *fiber.Ctx) error {
+	authKey := ctx.Get("Authorization")
+
+	if len(authKey) < 1 {
+		return ctx.SendStatus(http.StatusUnauthorized)
+	}
+
+	if authKey != conf.AuthKey {
+		return ctx.SendStatus(http.StatusForbidden)
+	}
+
+	result := make([]string, 0)
+
+	for {
+		keys, cursor, err := r.Scan(0, "unique:*")
+
+		if err != nil {
+			return err
+		}
+
+		for _, uuid := range keys {
+			result = append(result, strings.TrimPrefix(uuid, "unique:"))
+		}
+
+		if cursor == 0 || len(keys) < 1 {
+			break
+		}
+	}
+
+	return ctx.JSON(result)
 }
 
 // FullBodyHandler is the API handler used for the `/body/full/:uuid` route.
