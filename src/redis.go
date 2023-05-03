@@ -46,9 +46,7 @@ func (r *Redis) Scan(cursor uint64, pattern string, count int64) ([]string, uint
 		return nil, 0, err
 	}
 
-	keys, newCursor := res.Val()
-
-	return keys, newCursor, nil
+	return res.Result()
 }
 
 // GetString gets the value from Redis by the key and returns the value as a string.
