@@ -43,8 +43,14 @@ func ListHandler(ctx *fiber.Ctx) error {
 
 	result := make([]string, 0)
 
+	var (
+		cursor uint64 = 0
+		keys   []string
+		err    error
+	)
+
 	for {
-		keys, cursor, err := r.Scan(0, "unique:*", 25)
+		keys, cursor, err = r.Scan(cursor, "unique:*", 25)
 
 		if err != nil {
 			return err
