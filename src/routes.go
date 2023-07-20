@@ -31,16 +31,6 @@ func PingHandler(ctx *fiber.Ctx) error {
 
 // ListHandler is the API handler used for the `/list` route.
 func ListHandler(ctx *fiber.Ctx) error {
-	authKey := ctx.Get("Authorization")
-
-	if len(authKey) < 1 {
-		return ctx.SendStatus(http.StatusUnauthorized)
-	}
-
-	if authKey != conf.AuthKey {
-		return ctx.SendStatus(http.StatusForbidden)
-	}
-
 	result := make([]string, 0)
 
 	var (

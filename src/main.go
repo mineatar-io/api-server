@@ -1,9 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -20,8 +22,9 @@ var (
 			return ctx.SendStatus(http.StatusInternalServerError)
 		},
 	})
-	r    *Redis  = &Redis{}
-	conf *Config = &Config{}
+	r          *Redis  = &Redis{}
+	conf       *Config = &Config{}
+	instanceID uint16  = 0
 )
 
 func init() {
@@ -51,17 +54,20 @@ func init() {
 			TimeFormat: "2006/01/02 15:04:05",
 		}))
 	}
+
+	if instanceID, err = GetInstanceID(); err != nil {
+		panic(err)
+	}
 }
 
 func main() {
 	defer r.Close()
 
-	instanceID, err := GetInstanceID()
+	go ListenAndServe(conf.Host, conf.Port+instanceID)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	defer app.Shutdown()
 
-	log.Printf("Listening on %s:%d\n", conf.Host, conf.Port+instanceID)
-	log.Fatal(app.Listen(fmt.Sprintf("%s:%d", conf.Host, conf.Port+instanceID)))
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
+	<-s
 }
