@@ -13,7 +13,6 @@ var (
 		Environment: "development",
 		Host:        "127.0.0.1",
 		Port:        3001,
-		AuthKey:     "",
 		Redis: RedisConfig{
 			Host:     "127.0.0.1",
 			Port:     6379,
@@ -96,7 +95,6 @@ type Config struct {
 	Environment string       `yaml:"environment"`
 	Host        string       `yaml:"host"`
 	Port        uint16       `yaml:"port"`
-	AuthKey     string       `yaml:"auth_key"`
 	Redis       RedisConfig  `yaml:"redis"`
 	Routes      RoutesConfig `yaml:"routes"`
 	Cache       CacheConfig  `yaml:"cache"`
