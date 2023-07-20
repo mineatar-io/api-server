@@ -239,5 +239,5 @@ func ExtractUUID(ctx *fiber.Ctx) string {
 
 // SendUsernameDeprecation sends a deprecation warning about usernames.
 func SendUsernameDeprecation(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusBadRequest).SendString("Deprecated: Username support has been deprecated since April 23rd 2023, please use a valid UUID instead.")
+	return ctx.Status(http.StatusBadRequest).SendString("Deprecated: Username support has been deprecated since 23 April 2023, please use a valid UUID instead.")
 }
