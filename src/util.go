@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"image"
 	"image/draw"
@@ -14,6 +15,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mineatar-io/skin-render"
+)
+
+var (
+	//go:embed favicon.ico
+	favicon []byte
 )
 
 // QueryParams is used by most all API routes as options for how the image should be rendered, or how errors should be handled.

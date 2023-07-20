@@ -12,6 +12,7 @@ import (
 
 func init() {
 	app.Get("/ping", PingHandler)
+	app.Get("/favicon.ico", FaviconHandler)
 	app.Get("/list", ListHandler)
 	app.Get("/skin/:uuid", SkinHandler)
 	app.Get("/face/:uuid", FaceHandler)
@@ -27,6 +28,11 @@ func init() {
 // PingHandler is the API handler used for the `/ping` route.
 func PingHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusOK)
+}
+
+// FaviconHandler serves the favicon.ico file to any users that visit the API using a browser.
+func FaviconHandler(ctx *fiber.Ctx) error {
+	return ctx.Type("ico").Send(favicon)
 }
 
 // ListHandler is the API handler used for the `/list` route.
