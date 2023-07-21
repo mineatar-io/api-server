@@ -24,7 +24,6 @@ var (
 			Face: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
@@ -32,7 +31,6 @@ var (
 			Head: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
@@ -40,7 +38,6 @@ var (
 			FullBody: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
@@ -48,7 +45,6 @@ var (
 			FrontBody: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
@@ -56,7 +52,6 @@ var (
 			BackBody: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
@@ -64,7 +59,6 @@ var (
 			LeftBody: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
@@ -72,20 +66,17 @@ var (
 			RightBody: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
-				DefaultFallback: true,
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
 			},
 			RawSkin: RouteConfig{
 				DefaultDownload: false,
-				DefaultFallback: true,
 			},
 		},
 		Cache: CacheConfig{
-			UUIDCacheDuration:   time.Hour * 168,
-			SkinCacheDuration:   time.Hour * 12,
-			RenderCacheDuration: time.Hour * 12,
+			SkinCacheDuration:   PointerOf(time.Hour * 12),
+			RenderCacheDuration: PointerOf(time.Hour * 12),
 		},
 	}
 )
@@ -116,7 +107,6 @@ type RoutesConfig struct {
 type RouteConfig struct {
 	DefaultScale    int  `yaml:"default_scale"`
 	DefaultOverlay  bool `yaml:"default_overlay"`
-	DefaultFallback bool `yaml:"default_fallback"`
 	DefaultDownload bool `yaml:"default_download"`
 	MinScale        int  `yaml:"min_scale"`
 	MaxScale        int  `yaml:"max_scale"`
@@ -133,9 +123,8 @@ type RedisConfig struct {
 
 // CacheConfig is the configuration data used to set TTL values for Redis keys.
 type CacheConfig struct {
-	UUIDCacheDuration   time.Duration `yaml:"uuid_cache_duration"`
-	SkinCacheDuration   time.Duration `yaml:"skin_cache_duration"`
-	RenderCacheDuration time.Duration `yaml:"render_cache_duration"`
+	SkinCacheDuration   *time.Duration `yaml:"skin_cache_duration"`
+	RenderCacheDuration *time.Duration `yaml:"render_cache_duration"`
 }
 
 // ReadFile reads the configuration from the file and parses it as YAML.

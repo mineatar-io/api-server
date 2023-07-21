@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -61,13 +61,23 @@ func init() {
 }
 
 func main() {
+	if v := os.Getenv("PROFILE"); len(v) > 0 {
+		port, err := strconv.ParseUint(v, 10, 16)
+
+		if err != nil {
+			panic(err)
+		}
+
+		go Profile(uint16(port))
+
+		log.Printf("Profiler is listening on :%d\n", port)
+	}
+
 	defer r.Close()
 
-	go ListenAndServe(conf.Host, conf.Port+instanceID)
+	log.Printf("Listening on %s:%d\n", conf.Host, conf.Port+instanceID)
 
-	defer app.Shutdown()
-
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
-	<-s
+	if err := app.Listen(fmt.Sprintf("%s:%d", conf.Host, conf.Port+instanceID)); err != nil {
+		panic(err)
+	}
 }

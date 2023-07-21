@@ -20,6 +20,14 @@ import (
 var (
 	//go:embed favicon.ico
 	favicon []byte
+
+	RenderTypeFullBody  = "fullbody"
+	RenderTypeFrontBody = "frontbody"
+	RenderTypeBackBody  = "backbody"
+	RenderTypeLeftBody  = "leftbody"
+	RenderTypeRightBody = "rightbody"
+	RenderTypeFace      = "face"
+	RenderTypeHead      = "head"
 )
 
 // QueryParams is used by most all API routes as options for how the image should be rendered, or how errors should be handled.
@@ -27,6 +35,119 @@ type QueryParams struct {
 	Scale    int  `query:"scale"`
 	Download bool `query:"download"`
 	Overlay  bool `query:"overlay"`
+	Fallback bool `query:"fallback"`
+}
+
+// PointerOf returns the value of the first argument as a pointer.
+func PointerOf[T any](v T) *T {
+	return &v
+}
+
+// Render will render the image using the specified details and return the result.
+func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *QueryParams) ([]byte, bool, error) {
+	cache, err := GetCachedRenderResult(renderType, uuid, opts)
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	if cache != nil {
+		if conf.Environment == "development" {
+			log.Printf("Retrieved render from cache (type=%s, uuid=%s, slim=%v, scale=%d)\n", renderType, uuid, isSlim, opts.Scale)
+		}
+
+		return cache, true, nil
+	}
+
+	var (
+		result     *image.NRGBA
+		renderOpts skin.Options = skin.Options{
+			Overlay: opts.Overlay,
+			Slim:    isSlim,
+			Scale:   opts.Scale,
+		}
+	)
+
+	switch renderType {
+	case RenderTypeFullBody:
+		{
+			result = skin.RenderBody(rawSkin, renderOpts)
+
+			break
+		}
+	case RenderTypeFrontBody:
+		{
+			result = skin.RenderFrontBody(rawSkin, renderOpts)
+
+			break
+		}
+	case RenderTypeBackBody:
+		{
+			result = skin.RenderBackBody(rawSkin, renderOpts)
+
+			break
+		}
+	case RenderTypeLeftBody:
+		{
+			result = skin.RenderLeftBody(rawSkin, renderOpts)
+
+			break
+		}
+	case RenderTypeRightBody:
+		{
+			result = skin.RenderRightBody(rawSkin, renderOpts)
+
+			break
+		}
+	case RenderTypeHead:
+		{
+			result = skin.RenderHead(rawSkin, renderOpts)
+
+			break
+		}
+	case RenderTypeFace:
+		{
+			result = skin.RenderFace(rawSkin, renderOpts)
+
+			break
+		}
+	default:
+		panic(fmt.Errorf("unknown render type: %s", renderType))
+	}
+
+	data, err := EncodePNG(result)
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	if err = SetCachedRenderResult(renderType, uuid, opts, data); err != nil {
+		return nil, false, err
+	}
+
+	if conf.Environment == "development" {
+		log.Printf("Rendered image (type=%s, uuid=%s, slim=%v, scale=%d)\n", renderType, uuid, isSlim, opts.Scale)
+	}
+
+	return data, false, nil
+}
+
+// GetCachedRenderResult returns the render result from Redis cache, or nil if it does not exist or cache is disabled.
+func GetCachedRenderResult(renderType, uuid string, opts *QueryParams) ([]byte, error) {
+	if conf.Cache.RenderCacheDuration == nil {
+		return nil, nil
+	}
+
+	return r.GetBytes(fmt.Sprintf("result:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid))
+}
+
+// SetCachedRenderResult puts the render result into cache, or does nothing is cache is disabled.
+func SetCachedRenderResult(renderType, uuid string, opts *QueryParams, data []byte) error {
+	if conf.Cache.RenderCacheDuration == nil {
+		return nil
+	}
+
+	return r.Set(fmt.Sprintf("result:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid), data, *conf.Cache.RenderCacheDuration)
 }
 
 // FormatUUID returns the UUID string without any dashes.
@@ -74,32 +195,38 @@ func FetchImage(url string) (*image.NRGBA, error) {
 
 // GetPlayerSkin fetches the skin of the Minecraft player by the UUID.
 func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
-	cache, ok, err := r.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	if ok {
-		slim, err := r.Exists(fmt.Sprintf("slim:%s", uuid))
+	if conf.Cache.SkinCacheDuration != nil {
+		cache, ok, err := r.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
 
 		if err != nil {
 			return nil, false, err
 		}
 
-		return cache, slim, nil
+		if ok {
+			slim, err := r.Exists(fmt.Sprintf("slim:%s", uuid))
+
+			if err != nil {
+				return nil, false, err
+			}
+
+			if conf.Environment == "development" {
+				log.Printf("Retrieved player skin from cache (uuid=%s, slim=%v)\n", uuid, slim)
+			}
+
+			return cache, slim, nil
+		}
 	}
+
+	isSlimFromUUID := skin.IsSlimFromUUID(uuid)
 
 	textures, err := GetProfileTextures(uuid)
 
 	if err != nil {
-		return nil, false, err
+		return skin.GetDefaultSkin(isSlimFromUUID), true, nil
 	}
 
 	if textures == nil {
-		slim := skin.IsSlimFromUUID(uuid)
-
-		return skin.GetDefaultSkin(slim), slim, nil
+		return skin.GetDefaultSkin(isSlimFromUUID), isSlimFromUUID, nil
 	}
 
 	if err = r.Set(fmt.Sprintf("unique:%s", textures.UUID), "0", 0); err != nil {
@@ -117,9 +244,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	if len(value) < 1 {
-		slim := skin.IsSlimFromUUID(uuid)
-
-		return skin.GetDefaultSkin(slim), slim, nil
+		return skin.GetDefaultSkin(isSlimFromUUID), isSlimFromUUID, nil
 	}
 
 	texturesResult, err := GetDecodedTexturesValue(value)
@@ -129,9 +254,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	if len(texturesResult.Textures.Skin.URL) < 1 {
-		slim := skin.IsSlimFromUUID(uuid)
-
-		return skin.GetDefaultSkin(slim), slim, nil
+		return skin.GetDefaultSkin(isSlimFromUUID), isSlimFromUUID, nil
 	}
 
 	slim := texturesResult.Textures.Skin.Metadata.Model == "slim"
@@ -148,18 +271,24 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		return nil, false, err
 	}
 
-	if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, conf.Cache.SkinCacheDuration); err != nil {
-		return nil, false, err
+	if conf.Cache.SkinCacheDuration != nil {
+		if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, *conf.Cache.SkinCacheDuration); err != nil {
+			return nil, false, err
+		}
+
+		if slim {
+			if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", *conf.Cache.SkinCacheDuration); err != nil {
+				return nil, false, err
+			}
+		} else {
+			if err = r.Delete(fmt.Sprintf("slim:%s", uuid)); err != nil {
+				return nil, false, err
+			}
+		}
 	}
 
-	if slim {
-		if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", conf.Cache.SkinCacheDuration); err != nil {
-			return nil, false, err
-		}
-	} else {
-		if err = r.Delete(fmt.Sprintf("slim:%s", uuid)); err != nil {
-			return nil, false, err
-		}
+	if conf.Environment == "development" {
+		log.Printf("Fetched player skin from Mojang (uuid=%s, slim=%v)\n", uuid, slim)
 	}
 
 	return skin, slim, nil
@@ -167,7 +296,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 
 // Clamp clamps the input value between the minimum and maximum values.
 // This method is preferred over `math.Min()` and `math.Max()` to prevent any type coercion between floats and integers.
-func Clamp(value, min, max int) int {
+func Clamp[T int | uint | int8 | uint8 | int16 | uint16 | int32 | uint32 | int64 | uint64](value, min, max T) T {
 	if value > max {
 		return max
 	}
@@ -235,9 +364,4 @@ func GetInstanceID() (uint16, error) {
 // ExtractUUID returns the user name from the route param, allowing values such as "PassTheMayo.png" to be returned as "PassTheMayo".
 func ExtractUUID(ctx *fiber.Ctx) string {
 	return strings.Split(ctx.Params("uuid"), ".")[0]
-}
-
-// SendUsernameDeprecation sends a deprecation warning about usernames.
-func SendUsernameDeprecation(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusBadRequest).SendString("Deprecated: Username support has been deprecated since 23 April 2023, please use a valid UUID instead.")
 }

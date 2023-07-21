@@ -11,56 +11,47 @@ routes:
   face:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   head:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   full_body:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   front_body:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   back_body:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   left_body:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   right_body:
     default_overlay: true
     default_download: false
-    default_fallback: true
     default_scale: 4
     min_scale: 1
     max_scale: 64
   raw_skin:
     default_download: false
-    default_fallback: true
 cache:
-  uuid_cache_duration: 168h # 1 week
   skin_cache_duration: 12h # 12 hours
   render_cache_duration: 12h # 12 hours
