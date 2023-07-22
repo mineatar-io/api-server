@@ -35,7 +35,6 @@ type QueryParams struct {
 	Scale    int  `query:"scale"`
 	Download bool `query:"download"`
 	Overlay  bool `query:"overlay"`
-	Fallback bool `query:"fallback"`
 }
 
 // PointerOf returns the value of the first argument as a pointer.
@@ -45,6 +44,13 @@ func PointerOf[T any](v T) *T {
 
 // Render will render the image using the specified details and return the result.
 func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *QueryParams) ([]byte, bool, error) {
+	if conf.Cache.EnableLocks {
+		mutex := r.NewMutex(fmt.Sprintf("render-lock:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid))
+		mutex.Lock()
+
+		defer mutex.Unlock()
+	}
+
 	cache, err := GetCachedRenderResult(renderType, uuid, opts)
 
 	if err != nil {
@@ -195,6 +201,13 @@ func FetchImage(url string) (*image.NRGBA, error) {
 
 // GetPlayerSkin fetches the skin of the Minecraft player by the UUID.
 func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
+	if conf.Cache.EnableLocks {
+		mutex := r.NewMutex(fmt.Sprintf("skin-lock:%s", uuid))
+		mutex.Lock()
+
+		defer mutex.Unlock()
+	}
+
 	if conf.Cache.SkinCacheDuration != nil {
 		cache, ok, err := r.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
 

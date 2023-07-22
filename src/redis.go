@@ -8,30 +8,43 @@ import (
 	"image/draw"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redsync/redsync/v4"
+	redsyncredis "github.com/go-redsync/redsync/v4/redis"
+	redsyncredislib "github.com/go-redsync/redsync/v4/redis/goredis/v9"
+	"github.com/redis/go-redis/v9"
 )
+
+const defaultTimeout = 5 * time.Second
 
 // Redis is a utility client for reading and writing values to the Redis server.
 type Redis struct {
-	conn *redis.Client
+	Client     *redis.Client
+	Pool       *redsyncredis.Pool
+	SyncClient *redsync.Redsync
 }
 
 // Connect connects to the Redis server using the configuration values provided.
 func (r *Redis) Connect(conf RedisConfig) error {
-	c := redis.NewClient(&redis.Options{
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+
+	defer cancel()
+
+	r.Client = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", conf.Host, conf.Port),
 		Username: conf.User,
 		Password: conf.Password,
 		DB:       conf.Database,
 	})
 
-	r.conn = c
+	if err := r.Client.Ping(ctx).Err(); err != nil {
+		return err
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	pool := redsyncredislib.NewPool(r.Client)
 
-	defer cancel()
+	r.SyncClient = redsync.New(pool)
 
-	return c.Ping(ctx).Err()
+	return nil
 }
 
 // Scan returns all keys by the pattern in the Redis database.
@@ -40,7 +53,7 @@ func (r *Redis) Scan(cursor uint64, pattern string, count int64) ([]string, uint
 
 	defer cancel()
 
-	res := r.conn.Scan(ctx, cursor, pattern, count)
+	res := r.Client.Scan(ctx, cursor, pattern, count)
 
 	if err := res.Err(); err != nil {
 		return nil, 0, err
@@ -55,7 +68,7 @@ func (r *Redis) GetString(key string) (string, bool, error) {
 
 	defer cancel()
 
-	existsResult := r.conn.Exists(ctx, key)
+	existsResult := r.Client.Exists(ctx, key)
 
 	if err := existsResult.Err(); err != nil {
 		return "", false, err
@@ -65,7 +78,7 @@ func (r *Redis) GetString(key string) (string, bool, error) {
 		return "", false, nil
 	}
 
-	result := r.conn.Get(ctx, key)
+	result := r.Client.Get(ctx, key)
 
 	return result.Val(), true, result.Err()
 }
@@ -76,7 +89,7 @@ func (r *Redis) GetBytes(key string) ([]byte, error) {
 
 	defer cancel()
 
-	existsResult := r.conn.Exists(ctx, key)
+	existsResult := r.Client.Exists(ctx, key)
 
 	if err := existsResult.Err(); err != nil {
 		return nil, err
@@ -86,7 +99,7 @@ func (r *Redis) GetBytes(key string) ([]byte, error) {
 		return nil, nil
 	}
 
-	result := r.conn.Get(ctx, key)
+	result := r.Client.Get(ctx, key)
 
 	if err := result.Err(); err != nil {
 		return nil, err
@@ -132,7 +145,7 @@ func (r *Redis) Exists(key string) (bool, error) {
 
 	defer cancel()
 
-	result := r.conn.Exists(ctx, key)
+	result := r.Client.Exists(ctx, key)
 
 	return result.Val() == 1, result.Err()
 }
@@ -143,7 +156,7 @@ func (r *Redis) Delete(key string) error {
 
 	defer cancel()
 
-	return r.conn.Del(ctx, key).Err()
+	return r.Client.Del(ctx, key).Err()
 }
 
 // Set puts the key-value into the database with an optional TTL value.
@@ -152,10 +165,52 @@ func (r *Redis) Set(key string, value interface{}, ttl time.Duration) error {
 
 	defer cancel()
 
-	return r.conn.Set(ctx, key, value, ttl).Err()
+	return r.Client.Set(ctx, key, value, ttl).Err()
+}
+
+// NewMutex creates a new mutually exclusive lock that only one process can hold.
+func (r *Redis) NewMutex(name string) *Mutex {
+	if r.Client == nil || r.SyncClient == nil {
+		return &Mutex{
+			Mutex: nil,
+		}
+	}
+
+	return &Mutex{
+		Mutex: r.SyncClient.NewMutex(name),
+	}
 }
 
 // Close closes the connection to the database.
 func (r *Redis) Close() error {
-	return r.conn.Close()
+	return r.Client.Close()
+}
+
+// Mutex is a mutually exclusive lock held across all processes.
+type Mutex struct {
+	Mutex *redsync.Mutex
+}
+
+// Lock will lock the mutex so no other process can hold it.
+func (m *Mutex) Lock() error {
+	if m.Mutex == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+
+	defer cancel()
+
+	return m.Mutex.LockContext(ctx)
+}
+
+// Unlock will allow any other process to obtain a lock with the same key.
+func (m *Mutex) Unlock() error {
+	if m.Mutex == nil {
+		return nil
+	}
+
+	_, err := m.Mutex.Unlock()
+
+	return err
 }

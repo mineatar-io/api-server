@@ -77,6 +77,7 @@ var (
 		Cache: CacheConfig{
 			SkinCacheDuration:   PointerOf(time.Hour * 12),
 			RenderCacheDuration: PointerOf(time.Hour * 12),
+			EnableLocks:         true,
 		},
 	}
 )
@@ -125,6 +126,7 @@ type RedisConfig struct {
 type CacheConfig struct {
 	SkinCacheDuration   *time.Duration `yaml:"skin_cache_duration"`
 	RenderCacheDuration *time.Duration `yaml:"render_cache_duration"`
+	EnableLocks         bool           `yaml:"enable_locks"`
 }
 
 // ReadFile reads the configuration from the file and parses it as YAML.
