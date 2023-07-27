@@ -42,6 +42,20 @@ func PointerOf[T any](v T) *T {
 	return &v
 }
 
+// Clamp clamps the input value between the minimum and maximum values.
+// This method is preferred over `math.Min()` and `math.Max()` to prevent any type coercion between floats and integers.
+func Clamp[T int | uint | int8 | uint8 | int16 | uint16 | int32 | uint32 | int64 | uint64](value, min, max T) T {
+	if value > max {
+		return max
+	}
+
+	if value < min {
+		return min
+	}
+
+	return value
+}
+
 // Render will render the image using the specified details and return the result.
 func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *QueryParams) ([]byte, bool, error) {
 	if conf.Cache.EnableLocks {
@@ -138,32 +152,14 @@ func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *Qu
 	return data, false, nil
 }
 
-// GetCachedRenderResult returns the render result from Redis cache, or nil if it does not exist or cache is disabled.
-func GetCachedRenderResult(renderType, uuid string, opts *QueryParams) ([]byte, error) {
-	if conf.Cache.RenderCacheDuration == nil {
-		return nil, nil
-	}
-
-	return r.GetBytes(fmt.Sprintf("result:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid))
-}
-
-// SetCachedRenderResult puts the render result into cache, or does nothing is cache is disabled.
-func SetCachedRenderResult(renderType, uuid string, opts *QueryParams, data []byte) error {
-	if conf.Cache.RenderCacheDuration == nil {
-		return nil
-	}
-
-	return r.Set(fmt.Sprintf("result:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid), data, *conf.Cache.RenderCacheDuration)
-}
-
-// FormatUUID returns the UUID string without any dashes.
-func FormatUUID(uuid string) string {
-	return strings.ToLower(strings.ReplaceAll(uuid, "-", ""))
+// ExtractUUID returns the UUID from the route param, allowing values such as "<uuid>.png" to be returned as "<uuid>".
+func ExtractUUID(ctx *fiber.Ctx) string {
+	return strings.Split(ctx.Params("uuid"), ".")[0]
 }
 
 // ParseUUID parses the UUID given by the route parameters, and returns a boolean if the UUID is valid.
 func ParseUUID(value string) (string, bool) {
-	value = FormatUUID(value)
+	value = strings.ToLower(strings.ReplaceAll(value, "-", ""))
 
 	if len(value) != 32 {
 		return "", false
@@ -208,88 +204,90 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		defer mutex.Unlock()
 	}
 
+	// Get skin from cache, and return if it exists
 	if conf.Cache.SkinCacheDuration != nil {
-		cache, ok, err := r.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
+		rawSkin, slim, err := GetCachedSkin(uuid)
 
 		if err != nil {
 			return nil, false, err
 		}
 
-		if ok {
-			slim, err := r.Exists(fmt.Sprintf("slim:%s", uuid))
-
-			if err != nil {
-				return nil, false, err
-			}
-
-			if conf.Environment == "development" {
-				log.Printf("Retrieved player skin from cache (uuid=%s, slim=%v)\n", uuid, slim)
-			}
-
-			return cache, slim, nil
+		if rawSkin != nil {
+			return rawSkin, slim, nil
 		}
 	}
 
-	isSlimFromUUID := skin.IsSlimFromUUID(uuid)
+	var (
+		err              error                     = nil
+		skinImage        *image.NRGBA              = nil
+		rawSkin          []byte                    = nil
+		isSlim           bool                      = skin.IsSlimFromUUID(uuid)
+		profile          *MinecraftProfile         = nil
+		rawTextures      string                    = ""
+		texturesProperty *MinecraftDecodedTextures = nil
+	)
 
-	textures, err := GetProfileTextures(uuid)
-
-	if err != nil {
-		return skin.GetDefaultSkin(isSlimFromUUID), true, nil
-	}
-
-	if textures == nil {
-		return skin.GetDefaultSkin(isSlimFromUUID), isSlimFromUUID, nil
-	}
-
-	if err = r.Set(fmt.Sprintf("unique:%s", textures.UUID), "0", 0); err != nil {
-		return nil, false, err
-	}
-
-	value := ""
-
-	for _, property := range textures.Properties {
-		if property.Name != "textures" {
-			continue
+	// Get the textures metadata from Mojang about the Minecraft player
+	{
+		if profile, err = GetMinecraftProfile(uuid); err != nil {
+			return skin.GetDefaultSkin(isSlim), true, nil
 		}
 
-		value = property.Value
+		if profile == nil {
+			return skin.GetDefaultSkin(isSlim), isSlim, nil
+		}
+
+		if err = r.Set(fmt.Sprintf("unique:%s", profile.UUID), "0", 0); err != nil {
+			return nil, false, err
+		}
 	}
 
-	if len(value) < 1 {
-		return skin.GetDefaultSkin(isSlimFromUUID), isSlimFromUUID, nil
+	// Locate the skin information within the Minecraft profile properties
+	{
+		for _, property := range profile.Properties {
+			if property.Name != "textures" {
+				continue
+			}
+
+			rawTextures = property.Value
+		}
+
+		if len(rawTextures) < 1 {
+			return skin.GetDefaultSkin(isSlim), isSlim, nil
+		}
 	}
 
-	texturesResult, err := GetDecodedTexturesValue(value)
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	if len(texturesResult.Textures.Skin.URL) < 1 {
-		return skin.GetDefaultSkin(isSlimFromUUID), isSlimFromUUID, nil
-	}
-
-	slim := texturesResult.Textures.Skin.Metadata.Model == "slim"
-
-	skin, err := FetchImage(texturesResult.Textures.Skin.URL)
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	encodedSkin, err := EncodePNG(skin)
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	if conf.Cache.SkinCacheDuration != nil {
-		if err = r.Set(fmt.Sprintf("skin:%s", uuid), encodedSkin, *conf.Cache.SkinCacheDuration); err != nil {
+	// Decode the raw textures value returned from the player's properties
+	{
+		if texturesProperty, err = GetDecodedTexturesValue(rawTextures); err != nil {
 			return nil, false, err
 		}
 
-		if slim {
+		if len(texturesProperty.Textures.Skin.URL) < 1 {
+			return skin.GetDefaultSkin(isSlim), isSlim, nil
+		}
+
+		isSlim = texturesProperty.Textures.Skin.Metadata.Model == "slim"
+	}
+
+	// Fetch the raw skin image from the Mojang API
+	{
+		if skinImage, err = FetchImage(texturesProperty.Textures.Skin.URL); err != nil {
+			return nil, false, err
+		}
+
+		if rawSkin, err = EncodePNG(skinImage); err != nil {
+			return nil, false, err
+		}
+	}
+
+	// Put the skin into cache so it can be used for future requests
+	if conf.Cache.SkinCacheDuration != nil {
+		if err = r.Set(fmt.Sprintf("skin:%s", uuid), rawSkin, *conf.Cache.SkinCacheDuration); err != nil {
+			return nil, false, err
+		}
+
+		if isSlim {
 			if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", *conf.Cache.SkinCacheDuration); err != nil {
 				return nil, false, err
 			}
@@ -301,24 +299,10 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	if conf.Environment == "development" {
-		log.Printf("Fetched player skin from Mojang (uuid=%s, slim=%v)\n", uuid, slim)
+		log.Printf("Fetched player skin from Mojang (uuid=%s, slim=%v)\n", uuid, isSlim)
 	}
 
-	return skin, slim, nil
-}
-
-// Clamp clamps the input value between the minimum and maximum values.
-// This method is preferred over `math.Min()` and `math.Max()` to prevent any type coercion between floats and integers.
-func Clamp[T int | uint | int8 | uint8 | int16 | uint16 | int32 | uint32 | int64 | uint64](value, min, max T) T {
-	if value > max {
-		return max
-	}
-
-	if value < min {
-		return min
-	}
-
-	return value
+	return skinImage, isSlim, nil
 }
 
 // EncodePNG encodes the image into PNG format and returns the data as a byte array.
@@ -372,9 +356,4 @@ func GetInstanceID() (uint16, error) {
 	}
 
 	return 0, nil
-}
-
-// ExtractUUID returns the user name from the route param, allowing values such as "PassTheMayo.png" to be returned as "PassTheMayo".
-func ExtractUUID(ctx *fiber.Ctx) string {
-	return strings.Split(ctx.Params("uuid"), ".")[0]
 }

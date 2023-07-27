@@ -8,8 +8,8 @@ import (
 	"net/http"
 )
 
-// MinecraftProfileTextures is texture information about a Minecraft profile returned from the Mojang API.
-type MinecraftProfileTextures struct {
+// MinecraftProfile is metadata about a Minecraft player returned from the Mojang API.
+type MinecraftProfile struct {
 	UUID       string `json:"id"`
 	Username   string `json:"name"`
 	Legacy     bool   `json:"legacy"`
@@ -20,7 +20,7 @@ type MinecraftProfileTextures struct {
 	} `json:"properties"`
 }
 
-// MinecraftDecodedTextures is the decoded object of the Base64-encoded values property in a MinecraftProfileTextures texture value.
+// MinecraftDecodedTextures is the decoded object of the base64-encoded values property in a MinecraftProfile properties value.
 type MinecraftDecodedTextures struct {
 	Timestamp         int64  `json:"timestamp"`
 	UUID              string `json:"uuid"`
@@ -39,8 +39,8 @@ type MinecraftDecodedTextures struct {
 	} `json:"textures"`
 }
 
-// GetProfileTextures returns the textures of a Minecraft player from Mojang.
-func GetProfileTextures(uuid string) (*MinecraftProfileTextures, error) {
+// GetMinecraftProfile returns the textures of a Minecraft player from Mojang.
+func GetMinecraftProfile(uuid string) (*MinecraftProfile, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/profile/%s", uuid), nil)
 
 	if err != nil {
@@ -71,7 +71,7 @@ func GetProfileTextures(uuid string) (*MinecraftProfileTextures, error) {
 		return nil, err
 	}
 
-	response := MinecraftProfileTextures{}
+	response := MinecraftProfile{}
 
 	if err = json.Unmarshal(body, &response); err != nil {
 		return nil, err
