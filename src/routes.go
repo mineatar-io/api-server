@@ -5,13 +5,22 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+)
+
+var (
+	lastCount            uint64      = 0
+	lastCountRetrievedAt *time.Time  = nil
+	lastCountMutex       *sync.Mutex = &sync.Mutex{}
 )
 
 func init() {
 	app.Get("/ping", PingHandler)
 	app.Get("/favicon.ico", FaviconHandler)
+	app.Get("/count", CountHandler)
 	app.Get("/list", ListHandler)
 	app.Get("/skin/:uuid", SkinHandler)
 	app.Get("/face/:uuid", FaceHandler)
@@ -24,6 +33,10 @@ func init() {
 	app.Use(NotFoundHandler)
 }
 
+type CountResponse struct {
+	Count uint64 `json:"count"`
+}
+
 // PingHandler is the API handler used for the `/ping` route.
 func PingHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusOK)
@@ -32,6 +45,43 @@ func PingHandler(ctx *fiber.Ctx) error {
 // FaviconHandler serves the favicon.ico file to any users that visit the API using a browser.
 func FaviconHandler(ctx *fiber.Ctx) error {
 	return ctx.Type("ico").Send(favicon)
+}
+
+// CountHandler is the API handler used for the `/count` route.
+func CountHandler(ctx *fiber.Ctx) error {
+	lastCountMutex.Lock()
+
+	defer lastCountMutex.Unlock()
+
+	if lastCountRetrievedAt == nil || time.Since(*lastCountRetrievedAt) > time.Minute*15 {
+		lastCount = 0
+
+		var (
+			keys   []string
+			cursor uint64 = 0
+			err    error
+		)
+
+		for {
+			keys, cursor, err = r.Scan(cursor, "unique:*", 25)
+
+			if err != nil {
+				return err
+			}
+
+			lastCount += uint64(len(keys))
+
+			if cursor == 0 {
+				break
+			}
+		}
+
+		lastCountRetrievedAt = PointerOf(time.Now())
+	}
+
+	return ctx.JSON(CountResponse{
+		Count: lastCount,
+	})
 }
 
 // ListHandler is the API handler used for the `/list` route.
