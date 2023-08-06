@@ -65,7 +65,7 @@ func ListHandler(ctx *fiber.Ctx) error {
 
 // SkinHandler is the API handler used for the `/skin/:uuid` route.
 func SkinHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.RawSkin)
+	opts := ParseQueryParams(ctx, config.Routes.RawSkin)
 
 	uuid, ok := ParseUUID(ctx.Params("uuid"))
 
@@ -94,7 +94,7 @@ func SkinHandler(ctx *fiber.Ctx) error {
 
 // FaceHandler is the API handler used for the `/face/:uuid` route.
 func FaceHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.Face)
+	opts := ParseQueryParams(ctx, config.Routes.Face)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -125,7 +125,7 @@ func FaceHandler(ctx *fiber.Ctx) error {
 
 // HeadHandler is the API handler used for the `/head/:uuid` route.
 func HeadHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.Head)
+	opts := ParseQueryParams(ctx, config.Routes.Head)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -156,7 +156,7 @@ func HeadHandler(ctx *fiber.Ctx) error {
 
 // FullBodyHandler is the API handler used for the `/body/full/:uuid` route.
 func FullBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.FullBody)
+	opts := ParseQueryParams(ctx, config.Routes.FullBody)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -187,7 +187,7 @@ func FullBodyHandler(ctx *fiber.Ctx) error {
 
 // FrontBodyHandler is the API handler used for the `/body/front/:uuid` route.
 func FrontBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.FrontBody)
+	opts := ParseQueryParams(ctx, config.Routes.FrontBody)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -218,7 +218,7 @@ func FrontBodyHandler(ctx *fiber.Ctx) error {
 
 // BackBodyHandler is the API handler used for the `/body/back/:uuid` route.
 func BackBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.BackBody)
+	opts := ParseQueryParams(ctx, config.Routes.BackBody)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -249,7 +249,7 @@ func BackBodyHandler(ctx *fiber.Ctx) error {
 
 // LeftBodyHandler is the API handler used for the `/body/left/:uuid` route.
 func LeftBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.LeftBody)
+	opts := ParseQueryParams(ctx, config.Routes.LeftBody)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -280,7 +280,7 @@ func LeftBodyHandler(ctx *fiber.Ctx) error {
 
 // RightBodyHandler is the API handler used for the `/body/right/:uuid` route.
 func RightBodyHandler(ctx *fiber.Ctx) error {
-	opts := ParseQueryParams(ctx, conf.Routes.RightBody)
+	opts := ParseQueryParams(ctx, config.Routes.RightBody)
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 

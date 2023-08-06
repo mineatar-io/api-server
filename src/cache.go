@@ -38,7 +38,7 @@ func GetResultCacheKey(uuid, renderType string, opts *QueryParams) (string, erro
 
 // GetCachedRenderResult returns the render result from Redis cache, or nil if it does not exist or cache is disabled.
 func GetCachedRenderResult(renderType, uuid string, opts *QueryParams) ([]byte, error) {
-	if conf.Cache.RenderCacheDuration == nil {
+	if config.Cache.RenderCacheDuration == nil {
 		return nil, nil
 	}
 
@@ -53,7 +53,7 @@ func GetCachedRenderResult(renderType, uuid string, opts *QueryParams) ([]byte, 
 
 // SetCachedRenderResult puts the render result into cache, or does nothing is cache is disabled.
 func SetCachedRenderResult(renderType, uuid string, opts *QueryParams, data []byte) error {
-	if conf.Cache.RenderCacheDuration == nil {
+	if config.Cache.RenderCacheDuration == nil {
 		return nil
 	}
 
@@ -63,7 +63,7 @@ func SetCachedRenderResult(renderType, uuid string, opts *QueryParams, data []by
 		return err
 	}
 
-	return r.Set(key, data, *conf.Cache.RenderCacheDuration)
+	return r.Set(key, data, *config.Cache.RenderCacheDuration)
 }
 
 // GetCachedSkin returns the raw skin of a player by UUID from the cache, also returning if the player has a slim player model.
@@ -81,7 +81,7 @@ func GetCachedSkin(uuid string) (*image.NRGBA, bool, error) {
 			return nil, false, err
 		}
 
-		if conf.Environment == "development" {
+		if config.Environment == "development" {
 			log.Printf("Retrieved player skin from cache (uuid=%s, slim=%v)\n", uuid, slim)
 		}
 

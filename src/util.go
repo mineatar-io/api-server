@@ -58,7 +58,7 @@ func Clamp[T int | uint | int8 | uint8 | int16 | uint16 | int32 | uint32 | int64
 
 // Render will render the image using the specified details and return the result.
 func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *QueryParams) ([]byte, bool, error) {
-	if conf.Cache.EnableLocks {
+	if config.Cache.EnableLocks {
 		mutex := r.NewMutex(fmt.Sprintf("render-lock:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid))
 		mutex.Lock()
 
@@ -72,7 +72,7 @@ func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *Qu
 	}
 
 	if cache != nil {
-		if conf.Environment == "development" {
+		if config.Environment == "development" {
 			log.Printf("Retrieved render from cache (type=%s, uuid=%s, slim=%v, scale=%d)\n", renderType, uuid, isSlim, opts.Scale)
 		}
 
@@ -145,7 +145,7 @@ func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *Qu
 		return nil, false, err
 	}
 
-	if conf.Environment == "development" {
+	if config.Environment == "development" {
 		log.Printf("Rendered image (type=%s, uuid=%s, slim=%v, scale=%d)\n", renderType, uuid, isSlim, opts.Scale)
 	}
 
@@ -197,7 +197,7 @@ func FetchImage(url string) (*image.NRGBA, error) {
 
 // GetPlayerSkin fetches the skin of the Minecraft player by the UUID.
 func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
-	if conf.Cache.EnableLocks {
+	if config.Cache.EnableLocks {
 		mutex := r.NewMutex(fmt.Sprintf("skin-lock:%s", uuid))
 		mutex.Lock()
 
@@ -205,7 +205,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	// Get skin from cache, and return if it exists
-	if conf.Cache.SkinCacheDuration != nil {
+	if config.Cache.SkinCacheDuration != nil {
 		rawSkin, slim, err := GetCachedSkin(uuid)
 
 		if err != nil {
@@ -282,13 +282,13 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	// Put the skin into cache so it can be used for future requests
-	if conf.Cache.SkinCacheDuration != nil {
-		if err = r.Set(fmt.Sprintf("skin:%s", uuid), rawSkin, *conf.Cache.SkinCacheDuration); err != nil {
+	if config.Cache.SkinCacheDuration != nil {
+		if err = r.Set(fmt.Sprintf("skin:%s", uuid), rawSkin, *config.Cache.SkinCacheDuration); err != nil {
 			return nil, false, err
 		}
 
 		if isSlim {
-			if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", *conf.Cache.SkinCacheDuration); err != nil {
+			if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", *config.Cache.SkinCacheDuration); err != nil {
 				return nil, false, err
 			}
 		} else {
@@ -298,7 +298,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 		}
 	}
 
-	if conf.Environment == "development" {
+	if config.Environment == "development" {
 		log.Printf("Fetched player skin from Mojang (uuid=%s, slim=%v)\n", uuid, isSlim)
 	}
 

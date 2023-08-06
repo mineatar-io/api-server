@@ -23,18 +23,18 @@ var (
 		},
 	})
 	r          *Redis  = &Redis{}
-	conf       *Config = &Config{}
+	config     *Config = &Config{}
 	instanceID uint16  = 0
 )
 
 func init() {
 	var err error
 
-	if err = conf.ReadFile("config.yml"); err != nil {
+	if err = config.ReadFile("config.yml"); err != nil {
 		log.Fatal(err)
 	}
 
-	if err = r.Connect(conf.Redis); err != nil {
+	if err = r.Connect(config.Redis); err != nil {
 		log.Fatal(err)
 	}
 
@@ -42,7 +42,7 @@ func init() {
 
 	app.Use(recover.New())
 
-	if conf.Environment == "development" {
+	if config.Environment == "development" {
 		app.Use(cors.New(cors.Config{
 			AllowOrigins:  "*",
 			AllowMethods:  "HEAD,OPTIONS,GET",
@@ -75,9 +75,9 @@ func main() {
 
 	defer r.Close()
 
-	log.Printf("Listening on %s:%d\n", conf.Host, conf.Port+instanceID)
+	log.Printf("Listening on %s:%d\n", config.Host, config.Port+instanceID)
 
-	if err := app.Listen(fmt.Sprintf("%s:%d", conf.Host, conf.Port+instanceID)); err != nil {
+	if err := app.Listen(fmt.Sprintf("%s:%d", config.Host, config.Port+instanceID)); err != nil {
 		panic(err)
 	}
 }
