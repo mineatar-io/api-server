@@ -20,8 +20,8 @@ type MinecraftProfile struct {
 	} `json:"properties"`
 }
 
-// MinecraftDecodedTextures is the decoded object of the base64-encoded values property in a MinecraftProfile properties value.
-type MinecraftDecodedTextures struct {
+// DecodedTextures is the decoded object of the base64-encoded values property in a MinecraftProfile properties value.
+type DecodedTextures struct {
 	Timestamp         int64  `json:"timestamp"`
 	UUID              string `json:"uuid"`
 	Username          string `json:"username"`
@@ -47,7 +47,7 @@ func GetMinecraftProfile(uuid string) (*MinecraftProfile, error) {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "mineatar.io Skin Render API")
+	req.Header.Set("User-Agent", "mineatar.io")
 
 	resp, err := http.DefaultClient.Do(req)
 
@@ -71,7 +71,7 @@ func GetMinecraftProfile(uuid string) (*MinecraftProfile, error) {
 		return nil, err
 	}
 
-	response := MinecraftProfile{}
+	var response MinecraftProfile
 
 	if err = json.Unmarshal(body, &response); err != nil {
 		return nil, err
@@ -80,15 +80,15 @@ func GetMinecraftProfile(uuid string) (*MinecraftProfile, error) {
 	return &response, nil
 }
 
-// GetDecodedTexturesValue decodes the values from a MinecraftProfileTextures texture value.
-func GetDecodedTexturesValue(value string) (*MinecraftDecodedTextures, error) {
+// DecodeTexturesValue decodes the value from a MinecraftProfile texture property.
+func DecodeTexturesValue(value string) (*DecodedTextures, error) {
 	rawResult, err := base64.StdEncoding.DecodeString(value)
 
 	if err != nil {
 		return nil, err
 	}
 
-	result := MinecraftDecodedTextures{}
+	var result DecodedTextures
 
 	if err = json.Unmarshal(rawResult, &result); err != nil {
 		return nil, err

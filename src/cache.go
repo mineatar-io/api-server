@@ -1,12 +1,9 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
-	"log"
 )
 
 type ResultCacheKey struct {
@@ -31,9 +28,7 @@ func GetResultCacheKey(uuid, renderType string, opts *QueryParams) (string, erro
 		return "", err
 	}
 
-	hash := sha256.Sum256(rawKeyData)
-
-	return fmt.Sprintf("result:%s", hex.EncodeToString(hash[:])), nil
+	return fmt.Sprintf("result:%s", SHA256(rawKeyData)), nil
 }
 
 // GetCachedRenderResult returns the render result from Redis cache, or nil if it does not exist or cache is disabled.
@@ -81,12 +76,26 @@ func GetCachedSkin(uuid string) (*image.NRGBA, bool, error) {
 			return nil, false, err
 		}
 
-		if config.Environment == "development" {
-			log.Printf("Retrieved player skin from cache (uuid=%s, slim=%v)\n", uuid, slim)
-		}
-
 		return cache, slim, nil
 	}
 
 	return nil, false, nil
+}
+
+func SetCachedSkin(uuid string, value []byte, isSlim bool) error {
+	if err := r.Set(fmt.Sprintf("skin:%s", uuid), value, *config.Cache.SkinCacheDuration); err != nil {
+		return err
+	}
+
+	if isSlim {
+		if err := r.Set(fmt.Sprintf("slim:%s", uuid), "true", *config.Cache.SkinCacheDuration); err != nil {
+			return err
+		}
+	} else {
+		if err := r.Delete(fmt.Sprintf("slim:%s", uuid)); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

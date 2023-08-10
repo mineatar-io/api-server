@@ -1,12 +1,7 @@
 environment: development
 host: 127.0.0.1
 port: 3000
-redis:
-  host: 127.0.0.1
-  port: 6379
-  user:
-  password:
-  database: 0
+redis: redis://127.0.0.1:6379/0
 routes:
   face:
     default_overlay: true

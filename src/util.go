@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/draw"
@@ -20,14 +22,6 @@ import (
 var (
 	//go:embed favicon.ico
 	favicon []byte
-
-	RenderTypeFullBody  = "fullbody"
-	RenderTypeFrontBody = "frontbody"
-	RenderTypeBackBody  = "backbody"
-	RenderTypeLeftBody  = "leftbody"
-	RenderTypeRightBody = "rightbody"
-	RenderTypeFace      = "face"
-	RenderTypeHead      = "head"
 )
 
 // QueryParams is used by most all API routes as options for how the image should be rendered, or how errors should be handled.
@@ -54,102 +48,6 @@ func Clamp[T int | uint | int8 | uint8 | int16 | uint16 | int32 | uint32 | int64
 	}
 
 	return value
-}
-
-// Render will render the image using the specified details and return the result.
-func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *QueryParams) ([]byte, bool, error) {
-	if config.Cache.EnableLocks {
-		mutex := r.NewMutex(fmt.Sprintf("render-lock:%s-%d-%t-%s", renderType, opts.Scale, opts.Overlay, uuid))
-		mutex.Lock()
-
-		defer mutex.Unlock()
-	}
-
-	cache, err := GetCachedRenderResult(renderType, uuid, opts)
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	if cache != nil {
-		if config.Environment == "development" {
-			log.Printf("Retrieved render from cache (type=%s, uuid=%s, slim=%v, scale=%d)\n", renderType, uuid, isSlim, opts.Scale)
-		}
-
-		return cache, true, nil
-	}
-
-	var (
-		result     *image.NRGBA
-		renderOpts skin.Options = skin.Options{
-			Overlay: opts.Overlay,
-			Slim:    isSlim,
-			Scale:   opts.Scale,
-		}
-	)
-
-	switch renderType {
-	case RenderTypeFullBody:
-		{
-			result = skin.RenderBody(rawSkin, renderOpts)
-
-			break
-		}
-	case RenderTypeFrontBody:
-		{
-			result = skin.RenderFrontBody(rawSkin, renderOpts)
-
-			break
-		}
-	case RenderTypeBackBody:
-		{
-			result = skin.RenderBackBody(rawSkin, renderOpts)
-
-			break
-		}
-	case RenderTypeLeftBody:
-		{
-			result = skin.RenderLeftBody(rawSkin, renderOpts)
-
-			break
-		}
-	case RenderTypeRightBody:
-		{
-			result = skin.RenderRightBody(rawSkin, renderOpts)
-
-			break
-		}
-	case RenderTypeHead:
-		{
-			result = skin.RenderHead(rawSkin, renderOpts)
-
-			break
-		}
-	case RenderTypeFace:
-		{
-			result = skin.RenderFace(rawSkin, renderOpts)
-
-			break
-		}
-	default:
-		panic(fmt.Errorf("unknown render type: %s", renderType))
-	}
-
-	data, err := EncodePNG(result)
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	if err = SetCachedRenderResult(renderType, uuid, opts, data); err != nil {
-		return nil, false, err
-	}
-
-	if config.Environment == "development" {
-		log.Printf("Rendered image (type=%s, uuid=%s, slim=%v, scale=%d)\n", renderType, uuid, isSlim, opts.Scale)
-	}
-
-	return data, false, nil
 }
 
 // ExtractUUID returns the UUID from the route param, allowing values such as "<uuid>.png" to be returned as "<uuid>".
@@ -218,13 +116,13 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	}
 
 	var (
-		err              error                     = nil
-		skinImage        *image.NRGBA              = nil
-		rawSkin          []byte                    = nil
-		isSlim           bool                      = skin.IsSlimFromUUID(uuid)
-		profile          *MinecraftProfile         = nil
-		rawTextures      string                    = ""
-		texturesProperty *MinecraftDecodedTextures = nil
+		err              error             = nil
+		skinImage        *image.NRGBA      = nil
+		rawSkin          []byte            = nil
+		isSlim           bool              = skin.IsSlimFromUUID(uuid)
+		profile          *MinecraftProfile = nil
+		rawTextures      string            = ""
+		texturesProperty *DecodedTextures  = nil
 	)
 
 	// Get the textures metadata from Mojang about the Minecraft player
@@ -259,7 +157,7 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 
 	// Decode the raw textures value returned from the player's properties
 	{
-		if texturesProperty, err = GetDecodedTexturesValue(rawTextures); err != nil {
+		if texturesProperty, err = DecodeTexturesValue(rawTextures); err != nil {
 			return nil, false, err
 		}
 
@@ -283,23 +181,9 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 
 	// Put the skin into cache so it can be used for future requests
 	if config.Cache.SkinCacheDuration != nil {
-		if err = r.Set(fmt.Sprintf("skin:%s", uuid), rawSkin, *config.Cache.SkinCacheDuration); err != nil {
+		if err = SetCachedSkin(uuid, rawSkin, isSlim); err != nil {
 			return nil, false, err
 		}
-
-		if isSlim {
-			if err = r.Set(fmt.Sprintf("slim:%s", uuid), "true", *config.Cache.SkinCacheDuration); err != nil {
-				return nil, false, err
-			}
-		} else {
-			if err = r.Delete(fmt.Sprintf("slim:%s", uuid)); err != nil {
-				return nil, false, err
-			}
-		}
-	}
-
-	if config.Environment == "development" {
-		log.Printf("Fetched player skin from Mojang (uuid=%s, slim=%v)\n", uuid, isSlim)
 	}
 
 	return skinImage, isSlim, nil
@@ -356,4 +240,11 @@ func GetInstanceID() (uint16, error) {
 	}
 
 	return 0, nil
+}
+
+// SHA256 computes the SHA-256 hash of the input byte-array.
+func SHA256(value []byte) string {
+	hash := sha256.Sum256(value)
+
+	return hex.EncodeToString(hash[:])
 }

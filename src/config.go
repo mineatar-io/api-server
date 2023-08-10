@@ -13,14 +13,8 @@ var (
 		Environment: "development",
 		Host:        "127.0.0.1",
 		Port:        3001,
-		Redis: RedisConfig{
-			Host:     "127.0.0.1",
-			Port:     6379,
-			User:     "",
-			Password: "",
-			Database: 0,
-		},
-		Routes: RoutesConfig{
+		Redis:       "redis://127.0.0.1:6379/0",
+		Routes: Routes{
 			Face: RouteConfig{
 				DefaultOverlay:  true,
 				DefaultDownload: false,
@@ -84,16 +78,16 @@ var (
 
 // Config is the root configuration object for the application.
 type Config struct {
-	Environment string       `yaml:"environment"`
-	Host        string       `yaml:"host"`
-	Port        uint16       `yaml:"port"`
-	Redis       RedisConfig  `yaml:"redis"`
-	Routes      RoutesConfig `yaml:"routes"`
-	Cache       CacheConfig  `yaml:"cache"`
+	Environment string      `yaml:"environment"`
+	Host        string      `yaml:"host"`
+	Port        uint16      `yaml:"port"`
+	Redis       string      `yaml:"redis"`
+	Routes      Routes      `yaml:"routes"`
+	Cache       CacheConfig `yaml:"cache"`
 }
 
-// RoutesConfig is the configuration data of all API routes.
-type RoutesConfig struct {
+// Routes is the configuration data of all API routes.
+type Routes struct {
 	Face      RouteConfig `yaml:"face"`
 	Head      RouteConfig `yaml:"head"`
 	FullBody  RouteConfig `yaml:"full_body"`
@@ -111,15 +105,6 @@ type RouteConfig struct {
 	DefaultDownload bool `yaml:"default_download"`
 	MinScale        int  `yaml:"min_scale"`
 	MaxScale        int  `yaml:"max_scale"`
-}
-
-// RedisConfig is the configuration data used to connect to Redis.
-type RedisConfig struct {
-	Host     string `yaml:"host"`
-	Port     uint16 `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Database int    `yaml:"database"`
 }
 
 // CacheConfig is the configuration data used to set TTL values for Redis keys.

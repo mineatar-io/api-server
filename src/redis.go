@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"image"
 	"image/draw"
 	"time"
@@ -24,17 +23,18 @@ type Redis struct {
 }
 
 // Connect connects to the Redis server using the configuration values provided.
-func (r *Redis) Connect(conf RedisConfig) error {
+func (r *Redis) Connect(url string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 
 	defer cancel()
 
-	r.Client = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", conf.Host, conf.Port),
-		Username: conf.User,
-		Password: conf.Password,
-		DB:       conf.Database,
-	})
+	opts, err := redis.ParseURL(url)
+
+	if err != nil {
+		return err
+	}
+
+	r.Client = redis.NewClient(opts)
 
 	if err := r.Client.Ping(ctx).Err(); err != nil {
 		return err
