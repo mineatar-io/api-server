@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -61,18 +59,6 @@ func init() {
 }
 
 func main() {
-	if v := os.Getenv("PROFILE"); len(v) > 0 {
-		port, err := strconv.ParseUint(v, 10, 16)
-
-		if err != nil {
-			panic(err)
-		}
-
-		go Profile(uint16(port))
-
-		log.Printf("Profiler is listening on :%d\n", port)
-	}
-
 	defer r.Close()
 
 	log.Printf("Listening on %s:%d\n", config.Host, config.Port+instanceID)
