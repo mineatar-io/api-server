@@ -105,7 +105,7 @@ func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *Qu
 
 	// Encode the image into a PNG in byte-array format
 	{
-		data, err = EncodePNG(result)
+		data, err = EncodeImage(result, opts)
 
 		if err != nil {
 			return nil, false, err

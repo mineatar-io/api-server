@@ -5,22 +5,35 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-)
-
-var (
-	lastCount            uint64      = 0
-	lastCountRetrievedAt *time.Time  = nil
-	lastCountMutex       *sync.Mutex = &sync.Mutex{}
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func init() {
+	app.Use(recover.New())
+
+	app.Use(favicon.New(favicon.Config{
+		Data: faviconData,
+	}))
+
+	if config.Environment == "development" {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:  "*",
+			AllowMethods:  "HEAD,OPTIONS,GET",
+			ExposeHeaders: "X-Cache-Hit,X-Cache-Time-Remaining",
+		}))
+
+		app.Use(logger.New(logger.Config{
+			Format:     "${time} ${ip}:${port} -> ${status}: ${method} ${path} (${latency})\n",
+			TimeFormat: "2006/01/02 15:04:05",
+		}))
+	}
+
 	app.Get("/ping", PingHandler)
-	app.Get("/favicon.ico", FaviconHandler)
-	app.Get("/count", CountHandler)
 	app.Get("/list", ListHandler)
 	app.Get("/skin/:uuid", SkinHandler)
 	app.Get("/face/:uuid", FaceHandler)
@@ -30,58 +43,11 @@ func init() {
 	app.Get("/body/back/:uuid", BackBodyHandler)
 	app.Get("/body/left/:uuid", LeftBodyHandler)
 	app.Get("/body/right/:uuid", RightBodyHandler)
-	app.Use(NotFoundHandler)
-}
-
-type CountResponse struct {
-	Count uint64 `json:"count"`
 }
 
 // PingHandler is the API handler used for the `/ping` route.
 func PingHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusOK)
-}
-
-// FaviconHandler serves the favicon.ico file to any users that visit the API using a browser.
-func FaviconHandler(ctx *fiber.Ctx) error {
-	return ctx.Type("ico").Send(favicon)
-}
-
-// CountHandler is the API handler used for the `/count` route.
-func CountHandler(ctx *fiber.Ctx) error {
-	lastCountMutex.Lock()
-
-	defer lastCountMutex.Unlock()
-
-	if lastCountRetrievedAt == nil || time.Since(*lastCountRetrievedAt) > time.Minute*15 {
-		lastCount = 0
-
-		var (
-			keys   []string
-			cursor uint64 = 0
-			err    error
-		)
-
-		for {
-			keys, cursor, err = r.Scan(cursor, "unique:*", 25)
-
-			if err != nil {
-				return err
-			}
-
-			lastCount += uint64(len(keys))
-
-			if cursor == 0 {
-				break
-			}
-		}
-
-		lastCountRetrievedAt = PointerOf(time.Now())
-	}
-
-	return ctx.JSON(CountResponse{
-		Count: lastCount,
-	})
 }
 
 // ListHandler is the API handler used for the `/list` route.
@@ -117,6 +83,10 @@ func ListHandler(ctx *fiber.Ctx) error {
 func SkinHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.RawSkin)
 
+	if opts == nil {
+		return nil
+	}
+
 	uuid, ok := ParseUUID(ctx.Params("uuid"))
 
 	if !ok {
@@ -129,22 +99,26 @@ func SkinHandler(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	data, err := EncodePNG(rawSkin)
+	data, err := EncodeImage(rawSkin, opts)
 
 	if err != nil {
 		return err
 	}
 
 	if opts.Download {
-		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
+		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.%s"`, uuid, opts.Format))
 	}
 
-	return ctx.Type("png").Send(data)
+	return ctx.Type(opts.Format).Send(data)
 }
 
 // FaceHandler is the API handler used for the `/face/:uuid` route.
 func FaceHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.Face)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -170,12 +144,16 @@ func FaceHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
+	return ctx.Type(opts.Format).Send(result)
 }
 
 // HeadHandler is the API handler used for the `/head/:uuid` route.
 func HeadHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.Head)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -201,12 +179,16 @@ func HeadHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
+	return ctx.Type(opts.Format).Send(result)
 }
 
 // FullBodyHandler is the API handler used for the `/body/full/:uuid` route.
 func FullBodyHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.FullBody)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -232,12 +214,16 @@ func FullBodyHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
+	return ctx.Type(opts.Format).Send(result)
 }
 
 // FrontBodyHandler is the API handler used for the `/body/front/:uuid` route.
 func FrontBodyHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.FrontBody)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -263,12 +249,16 @@ func FrontBodyHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
+	return ctx.Type(opts.Format).Send(result)
 }
 
 // BackBodyHandler is the API handler used for the `/body/back/:uuid` route.
 func BackBodyHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.BackBody)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -294,12 +284,16 @@ func BackBodyHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
+	return ctx.Type(opts.Format).Send(result)
 }
 
 // LeftBodyHandler is the API handler used for the `/body/left/:uuid` route.
 func LeftBodyHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.LeftBody)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -325,12 +319,16 @@ func LeftBodyHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
+	return ctx.Type(opts.Format).Send(result)
 }
 
 // RightBodyHandler is the API handler used for the `/body/right/:uuid` route.
 func RightBodyHandler(ctx *fiber.Ctx) error {
 	opts := ParseQueryParams(ctx, config.Routes.RightBody)
+
+	if opts == nil {
+		return nil
+	}
 
 	uuid, ok := ParseUUID(ExtractUUID(ctx))
 
@@ -356,10 +354,5 @@ func RightBodyHandler(ctx *fiber.Ctx) error {
 		ctx.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.png"`, uuid))
 	}
 
-	return ctx.Type("png").Send(result)
-}
-
-// NotFoundHandler is the API handler used for any requests that do not match an existing route.
-func NotFoundHandler(ctx *fiber.Ctx) error {
-	return ctx.SendStatus(http.StatusNotFound)
+	return ctx.Type(opts.Format).Send(result)
 }

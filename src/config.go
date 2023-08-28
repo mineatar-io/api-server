@@ -21,6 +21,7 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			Head: RouteConfig{
 				DefaultOverlay:  true,
@@ -28,6 +29,7 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			FullBody: RouteConfig{
 				DefaultOverlay:  true,
@@ -35,6 +37,7 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			FrontBody: RouteConfig{
 				DefaultOverlay:  true,
@@ -42,6 +45,7 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			BackBody: RouteConfig{
 				DefaultOverlay:  true,
@@ -49,6 +53,7 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			LeftBody: RouteConfig{
 				DefaultOverlay:  true,
@@ -56,6 +61,7 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			RightBody: RouteConfig{
 				DefaultOverlay:  true,
@@ -63,9 +69,11 @@ var (
 				DefaultScale:    4,
 				MinScale:        1,
 				MaxScale:        64,
+				DefaultFormat:   "png",
 			},
 			RawSkin: RouteConfig{
 				DefaultDownload: false,
+				DefaultFormat:   "png",
 			},
 		},
 		Cache: CacheConfig{
@@ -100,11 +108,12 @@ type Routes struct {
 
 // RouteConfig is the configuration data used by a single API route.
 type RouteConfig struct {
-	DefaultScale    int  `yaml:"default_scale"`
-	DefaultOverlay  bool `yaml:"default_overlay"`
-	DefaultDownload bool `yaml:"default_download"`
-	MinScale        int  `yaml:"min_scale"`
-	MaxScale        int  `yaml:"max_scale"`
+	DefaultScale    int    `yaml:"default_scale"`
+	DefaultOverlay  bool   `yaml:"default_overlay"`
+	DefaultDownload bool   `yaml:"default_download"`
+	DefaultFormat   string `yaml:"default_format"`
+	MinScale        int    `yaml:"min_scale"`
+	MaxScale        int    `yaml:"max_scale"`
 }
 
 // CacheConfig is the configuration data used to set TTL values for Redis keys.

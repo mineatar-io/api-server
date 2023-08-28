@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"image/gif"
+	"image/jpeg"
 	"image/png"
 	"log"
 	"net/http"
@@ -21,19 +23,39 @@ import (
 
 var (
 	//go:embed favicon.ico
-	favicon []byte
+	faviconData    []byte
+	AllowedFormats []string = []string{
+		"png",
+		"jpg",
+		"jpeg",
+		"gif",
+	}
 )
 
 // QueryParams is used by most all API routes as options for how the image should be rendered, or how errors should be handled.
 type QueryParams struct {
-	Scale    int  `query:"scale"`
-	Download bool `query:"download"`
-	Overlay  bool `query:"overlay"`
+	Scale    int
+	Download bool
+	Overlay  bool
+	Format   string
 }
 
 // PointerOf returns the value of the first argument as a pointer.
 func PointerOf[T any](v T) *T {
 	return &v
+}
+
+// Contains returns true if the array contains the value.
+func Contains[T comparable](arr []T, value T) bool {
+	for _, v := range arr {
+		if v != value {
+			continue
+		}
+
+		return true
+	}
+
+	return false
 }
 
 // Clamp clamps the input value between the minimum and maximum values.
@@ -200,31 +222,58 @@ func EncodePNG(img image.Image) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// EncodeImage encodes the image into the format specified by the query parameters.
+func EncodeImage(img image.Image, opts *QueryParams) ([]byte, error) {
+	buf := &bytes.Buffer{}
+
+	switch opts.Format {
+	case "png":
+		{
+			if err := png.Encode(buf, img); err != nil {
+				return nil, err
+			}
+
+			break
+		}
+	case "jpg", "jpeg":
+		{
+			if err := jpeg.Encode(buf, img, nil); err != nil {
+				return nil, err
+			}
+
+			break
+		}
+	case "gif":
+		{
+			if err := gif.Encode(buf, img, nil); err != nil {
+				return nil, err
+			}
+
+			break
+		}
+	default:
+		return nil, fmt.Errorf("invalid format: %s", opts.Format)
+	}
+
+	return buf.Bytes(), nil
+}
+
 // ParseQueryParams parses the query parameters from the request and returns a QueryParams struct, using default values from the provided configuration.
 func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
-	args := ctx.Context().QueryArgs()
+	format := ctx.Query("format", route.DefaultFormat)
 
-	response := &QueryParams{
-		Scale:    route.DefaultScale,
-		Download: route.DefaultDownload,
-		Overlay:  route.DefaultOverlay,
+	if !Contains(AllowedFormats, format) {
+		ctx.Status(http.StatusBadRequest).SendString("Invalid 'format' query parameter")
+
+		return nil
 	}
 
-	if args.Has("scale") {
-		if scale, err := args.GetUint("scale"); err == nil {
-			response.Scale = Clamp(scale, route.MinScale, route.MaxScale)
-		}
+	return &QueryParams{
+		Scale:    Clamp(ctx.QueryInt("scale", route.DefaultScale), route.MinScale, route.MaxScale),
+		Download: ctx.QueryBool("download", route.DefaultDownload),
+		Overlay:  ctx.QueryBool("overlay", route.DefaultOverlay),
+		Format:   ctx.Query("format", route.DefaultFormat),
 	}
-
-	if args.Has("overlay") {
-		response.Overlay = args.GetBool("overlay")
-	}
-
-	if args.Has("download") {
-		response.Download = args.GetBool("download")
-	}
-
-	return response
 }
 
 // GetInstanceID returns the INSTANCE_ID environment variable parsed as an unsigned 16-bit integer.
@@ -242,9 +291,9 @@ func GetInstanceID() (uint16, error) {
 	return 0, nil
 }
 
-// SHA256 computes the SHA-256 hash of the input byte-array.
-func SHA256(value []byte) string {
-	hash := sha256.Sum256(value)
+// SHA256 computes the SHA-256 hash of the input string.
+func SHA256(value string) string {
+	hash := sha256.Sum256([]byte(value))
 
 	return hex.EncodeToString(hash[:])
 }
