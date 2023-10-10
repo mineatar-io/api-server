@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -193,7 +194,11 @@ func GetPlayerSkin(uuid string) (*image.NRGBA, bool, error) {
 	// Fetch the raw skin image from the Mojang API
 	{
 		if skinImage, err = FetchImage(texturesProperty.Textures.Skin.URL); err != nil {
-			return nil, false, err
+			if !errors.Is(err, image.ErrFormat) {
+				return nil, false, err
+			}
+
+			skinImage = skin.GetDefaultSkin(isSlim)
 		}
 
 		if rawSkin, err = EncodePNG(skinImage); err != nil {
