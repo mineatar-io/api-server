@@ -94,6 +94,8 @@ github.com/mineatar-io/skin-render v1.1.0 h1:KKAa78TB617wSjbPv/JxWOvLqrajE/7C+XB
 github.com/mineatar-io/skin-render v1.1.0/go.mod h1:KkgHwrhTIqD73dkmeQwh5k2aHuWS8cDahVmd64gM128=
 github.com/mineatar-io/skin-render v1.1.1 h1:qxu2KoBFrueJp9C1Fp3xXi5eEPjmPBK7cjAo5DtqCE4=
 github.com/mineatar-io/skin-render v1.1.1/go.mod h1:ESYvjLHUilplx/WhI3fNCfbvAGhiPL0kC273tIdZ8WA=
+github.com/mineatar-io/skin-render v1.2.0 h1:0lGe8epVbeqnDMnj7EleKZeoQBA3k5WVMIm8UE8fF+g=
+github.com/mineatar-io/skin-render v1.2.0/go.mod h1:ESYvjLHUilplx/WhI3fNCfbvAGhiPL0kC273tIdZ8WA=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
 github.com/oklog/ulid/v2 v2.1.0/go.mod h1:rcEKHmBBKfef9DhnvX7y1HZBYxjXb0cP5ExxNsTT1QQ=
