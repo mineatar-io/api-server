@@ -47,42 +47,6 @@ func (r *Redis) Connect(url string) error {
 	return nil
 }
 
-// Scan returns all keys by the pattern in the Redis database.
-func (r *Redis) Scan(cursor uint64, pattern string, count int64) ([]string, uint64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-
-	defer cancel()
-
-	res := r.Client.Scan(ctx, cursor, pattern, count)
-
-	if err := res.Err(); err != nil {
-		return nil, 0, err
-	}
-
-	return res.Result()
-}
-
-// GetString gets the value from Redis by the key and returns the value as a string.
-func (r *Redis) GetString(key string) (string, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-
-	defer cancel()
-
-	existsResult := r.Client.Exists(ctx, key)
-
-	if err := existsResult.Err(); err != nil {
-		return "", false, err
-	}
-
-	if existsResult.Val() == 0 {
-		return "", false, nil
-	}
-
-	result := r.Client.Get(ctx, key)
-
-	return result.Val(), true, result.Err()
-}
-
 // GetBytes gets the value from Redis by the key and returns the value as a byte array.
 func (r *Redis) GetBytes(key string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

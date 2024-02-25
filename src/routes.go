@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -34,7 +33,6 @@ func init() {
 	}
 
 	app.Get("/ping", PingHandler)
-	app.Get("/list", ListHandler)
 	app.Get("/skin/:uuid", SkinHandler)
 	app.Get("/face/:uuid", FaceHandler)
 	app.Get("/head/:uuid", HeadHandler)
@@ -48,35 +46,6 @@ func init() {
 // PingHandler is the API handler used for the `/ping` route.
 func PingHandler(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusOK)
-}
-
-// ListHandler is the API handler used for the `/list` route.
-func ListHandler(ctx *fiber.Ctx) error {
-	result := make([]string, 0)
-
-	var (
-		cursor uint64 = 0
-		keys   []string
-		err    error
-	)
-
-	for {
-		keys, cursor, err = r.Scan(cursor, "unique:*", 25)
-
-		if err != nil {
-			return err
-		}
-
-		for _, uuid := range keys {
-			result = append(result, strings.TrimPrefix(uuid, "unique:"))
-		}
-
-		if cursor == 0 {
-			break
-		}
-	}
-
-	return ctx.JSON(result)
 }
 
 // SkinHandler is the API handler used for the `/skin/:uuid` route.
