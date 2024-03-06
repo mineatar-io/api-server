@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-redsync/redsync/v4 v4.12.1
-	github.com/gofiber/fiber/v2 v2.52.1
+	github.com/gofiber/fiber/v2 v2.52.2
 	github.com/mineatar-io/skin-render v1.2.0
 	github.com/redis/go-redis/v9 v9.5.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -28,6 +28,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.52.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
