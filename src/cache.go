@@ -22,6 +22,7 @@ func GetResultCacheKey(uuid, renderType string, opts *QueryParams) string {
 	values.Set("scale", strconv.FormatInt(int64(opts.Scale), 10))
 	values.Set("overlay", strconv.FormatBool(opts.Overlay))
 	values.Set("format", opts.Format)
+	values.Set("square", strconv.FormatBool(opts.Square))
 
 	return SHA256(values.Encode())
 }

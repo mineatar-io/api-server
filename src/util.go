@@ -39,6 +39,7 @@ type QueryParams struct {
 	Download bool
 	Overlay  bool
 	Format   string
+	Square   bool
 }
 
 // PointerOf returns the value of the first argument as a pointer.
@@ -278,6 +279,7 @@ func ParseQueryParams(ctx *fiber.Ctx, route RouteConfig) *QueryParams {
 		Download: ctx.QueryBool("download", route.DefaultDownload),
 		Overlay:  ctx.QueryBool("overlay", route.DefaultOverlay),
 		Format:   ctx.Query("format", route.DefaultFormat),
+		Square:   ctx.QueryBool("square", route.DefaultSquare),
 	}
 }
 

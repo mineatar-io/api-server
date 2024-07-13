@@ -19,6 +19,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -27,6 +28,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -35,6 +37,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -43,6 +46,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -51,6 +55,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -59,6 +64,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -67,6 +73,7 @@ var (
 				DefaultOverlay:  true,
 				DefaultDownload: false,
 				DefaultScale:    4,
+				DefaultSquare:   false,
 				MinScale:        1,
 				MaxScale:        64,
 				DefaultFormat:   "png",
@@ -112,6 +119,7 @@ type RouteConfig struct {
 	DefaultOverlay  bool   `yaml:"default_overlay"`
 	DefaultDownload bool   `yaml:"default_download"`
 	DefaultFormat   string `yaml:"default_format"`
+	DefaultSquare   bool   `yaml:"default_square"`
 	MinScale        int    `yaml:"min_scale"`
 	MaxScale        int    `yaml:"max_scale"`
 }

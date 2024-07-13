@@ -45,6 +45,7 @@ func Render(renderType, uuid string, rawSkin *image.NRGBA, isSlim bool, opts *Qu
 			Overlay: opts.Overlay,
 			Slim:    isSlim,
 			Scale:   opts.Scale,
+			Square:  opts.Square,
 		}
 	)
 
