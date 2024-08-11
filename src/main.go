@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mineatar-io/api-server/src/store"
 )
 
 var (
@@ -24,9 +25,10 @@ var (
 			return ctx.SendStatus(http.StatusInternalServerError)
 		},
 	})
-	r          *Redis  = &Redis{}
-	config     *Config = &Config{}
-	instanceID uint16  = 0
+	r          *Redis      = &Redis{}
+	s          store.Store = nil
+	config     *Config     = &Config{}
+	instanceID uint16      = 0
 )
 
 func init() {
@@ -42,13 +44,29 @@ func init() {
 
 	log.Println("Successfully connected to Redis")
 
+	storeType, ok := config.Cache.Store["type"].(string)
+
+	if !ok {
+		log.Fatalf("config: invalid cache.store.type type: %T", config.Cache.Store["type"])
+	}
+
+	s, ok = store.StoreTypes[storeType]
+
+	if !ok {
+		log.Fatalf("config: unknown store type: %s", storeType)
+	}
+
+	if err := s.Initialize(config.Cache.Store); err != nil {
+		log.Fatal(err)
+	}
+
 	if instanceID, err = GetInstanceID(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
 func main() {
-	defer r.Close()
+	defer s.Close()
 
 	log.Printf("Listening on %s:%d\n", config.Host, config.Port+instanceID)
 

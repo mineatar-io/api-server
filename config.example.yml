@@ -63,6 +63,9 @@ routes:
     default_download: false
     default_format: png
 cache:
+  store:
+    type: filestore
+    dir: store
   skin_cache_duration: 12h # 12 hours
   render_cache_duration: 12h # 12 hours
   enable_locks: true

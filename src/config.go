@@ -126,9 +126,10 @@ type RouteConfig struct {
 
 // CacheConfig is the configuration data used to set TTL values for Redis keys.
 type CacheConfig struct {
-	SkinCacheDuration   *time.Duration `yaml:"skin_cache_duration"`
-	RenderCacheDuration *time.Duration `yaml:"render_cache_duration"`
-	EnableLocks         bool           `yaml:"enable_locks"`
+	Store               map[string]interface{} `yaml:"store"`
+	SkinCacheDuration   *time.Duration         `yaml:"skin_cache_duration"`
+	RenderCacheDuration *time.Duration         `yaml:"render_cache_duration"`
+	EnableLocks         bool                   `yaml:"enable_locks"`
 }
 
 // ReadFile reads the configuration from the file and parses it as YAML.

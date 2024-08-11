@@ -33,7 +33,9 @@ func GetCachedRenderResult(renderType, uuid string, opts *QueryParams) ([]byte, 
 		return nil, nil
 	}
 
-	return r.GetBytes(fmt.Sprintf("result:%s", GetResultCacheKey(uuid, renderType, opts)))
+	data, _, err := s.GetBytes(fmt.Sprintf("result:%s", GetResultCacheKey(uuid, renderType, opts)))
+
+	return data, err
 }
 
 // SetCachedRenderResult puts the render result into cache, or does nothing is cache is disabled.
@@ -42,19 +44,19 @@ func SetCachedRenderResult(renderType, uuid string, opts *QueryParams, data []by
 		return nil
 	}
 
-	return r.Set(fmt.Sprintf("result:%s", GetResultCacheKey(uuid, renderType, opts)), data, *config.Cache.RenderCacheDuration)
+	return s.SetBytes(fmt.Sprintf("result:%s", GetResultCacheKey(uuid, renderType, opts)), data, *config.Cache.RenderCacheDuration)
 }
 
 // GetCachedSkin returns the raw skin of a player by UUID from the cache, also returning if the player has a slim player model.
 func GetCachedSkin(uuid string) (*image.NRGBA, bool, error) {
-	cache, ok, err := r.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
+	cache, ok, err := s.GetNRGBA(fmt.Sprintf("skin:%s", uuid))
 
 	if err != nil {
 		return nil, false, err
 	}
 
 	if ok {
-		slim, err := r.Exists(fmt.Sprintf("slim:%s", uuid))
+		slim, err := s.Exists(fmt.Sprintf("slim:%s", uuid))
 
 		if err != nil {
 			return nil, false, err
@@ -67,16 +69,16 @@ func GetCachedSkin(uuid string) (*image.NRGBA, bool, error) {
 }
 
 func SetCachedSkin(uuid string, value []byte, isSlim bool) error {
-	if err := r.Set(fmt.Sprintf("skin:%s", uuid), value, *config.Cache.SkinCacheDuration); err != nil {
+	if err := s.SetBytes(fmt.Sprintf("skin:%s", uuid), value, *config.Cache.SkinCacheDuration); err != nil {
 		return err
 	}
 
 	if isSlim {
-		if err := r.Set(fmt.Sprintf("slim:%s", uuid), "true", *config.Cache.SkinCacheDuration); err != nil {
+		if err := s.SetBytes(fmt.Sprintf("slim:%s", uuid), []byte("true"), *config.Cache.SkinCacheDuration); err != nil {
 			return err
 		}
 	} else {
-		if err := r.Delete(fmt.Sprintf("slim:%s", uuid)); err != nil {
+		if err := s.Delete(fmt.Sprintf("slim:%s", uuid)); err != nil {
 			return err
 		}
 	}
