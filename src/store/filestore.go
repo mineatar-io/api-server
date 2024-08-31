@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"log"
 	"os"
 	"path"
 	"time"
@@ -28,7 +27,6 @@ func (s *FileStore) Initialize(config map[string]interface{}) error {
 	}
 
 	s.BaseDir = path.Clean(baseDir)
-	log.Printf("%s\n", s.BaseDir)
 
 	return nil
 }
