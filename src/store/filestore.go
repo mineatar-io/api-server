@@ -2,17 +2,23 @@ package store
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image"
 	"image/draw"
+	"log"
 	"os"
 	"path"
+	"strings"
 	"time"
 )
 
 type FileStore struct {
-	BaseDir string
+	cancelCtx     context.Context
+	cancelFunc    context.CancelFunc
+	BaseDir       string
+	CleanInterval time.Duration
 }
 
 func (s *FileStore) Initialize(config map[string]interface{}) error {
@@ -27,6 +33,93 @@ func (s *FileStore) Initialize(config map[string]interface{}) error {
 	}
 
 	s.BaseDir = path.Clean(baseDir)
+
+	cleanIntervalValue, ok := config["clean_interval"].(string)
+
+	if !ok {
+		return fmt.Errorf("filestore: invalid clean interval value: %s", config["clean_interval"])
+	}
+
+	cleanInterval, err := time.ParseDuration(cleanIntervalValue)
+
+	if err != nil {
+		return err
+	}
+
+	s.CleanInterval = cleanInterval
+	s.cancelCtx, s.cancelFunc = context.WithCancel(context.Background())
+
+	go s.cleanupGoroutine()
+
+	return nil
+}
+
+func (s *FileStore) cleanupGoroutine() {
+	if err := s.runCleanup(); err != nil {
+		log.Println(err)
+	}
+
+loop:
+	for {
+		select {
+		case <-s.cancelCtx.Done():
+			break loop
+		case <-time.After(s.CleanInterval):
+			{
+				if err := s.runCleanup(); err != nil {
+					log.Println(err)
+				}
+
+				break
+			}
+		}
+	}
+}
+
+func (s *FileStore) runCleanup() error {
+	files, err := os.ReadDir(s.BaseDir)
+
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".expiration.txt") {
+			continue
+		}
+
+		data, err := os.ReadFile(path.Join(s.BaseDir, file.Name()))
+
+		if err != nil {
+			log.Println(err)
+
+			continue
+		}
+
+		expirationDate, err := time.Parse(time.RFC3339, string(data))
+
+		if err != nil {
+			log.Println(err)
+
+			continue
+		}
+
+		if !time.Now().After(expirationDate) {
+			log.Printf("Skipped %s\n", file.Name())
+
+			continue
+		}
+
+		if err = os.Remove(path.Join(s.BaseDir, file.Name())); err != nil {
+			log.Println(err)
+		}
+
+		if err = os.Remove(path.Join(s.BaseDir, strings.Replace(file.Name(), ".expiration.txt", ".bin", 1))); err != nil {
+			log.Println(err)
+		}
+
+		log.Printf("Removed %s\n", file.Name())
+	}
 
 	return nil
 }
@@ -132,6 +225,8 @@ func (s *FileStore) Delete(key string) error {
 }
 
 func (s *FileStore) Close() error {
+	s.cancelFunc()
+
 	return nil
 }
 

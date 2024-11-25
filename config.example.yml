@@ -66,6 +66,7 @@ cache:
   store:
     type: filestore
     dir: store
+    clean_interval: 1h
   skin_cache_duration: 12h # 12 hours
   render_cache_duration: 12h # 12 hours
   enable_locks: true
