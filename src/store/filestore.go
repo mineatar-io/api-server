@@ -105,8 +105,6 @@ func (s *FileStore) runCleanup() error {
 		}
 
 		if !time.Now().After(expirationDate) {
-			log.Printf("Skipped %s\n", file.Name())
-
 			continue
 		}
 
@@ -117,8 +115,6 @@ func (s *FileStore) runCleanup() error {
 		if err = os.Remove(path.Join(s.BaseDir, strings.Replace(file.Name(), ".expiration.txt", ".bin", 1))); err != nil {
 			log.Println(err)
 		}
-
-		log.Printf("Removed %s\n", file.Name())
 	}
 
 	return nil
